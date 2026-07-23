@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PxP Flip Phone Emulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container { display: flex; height: 100vh; }
+        
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #333;
+        }
+        
+        .editor-header {
+            background: #1a1a1a;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #333;
+        }
+        
+        .editor-title {
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .button-group { display: flex; gap: 10px; }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .btn-save { background: #2563eb; color: white; }
+        .btn-save:hover { background: #1d4ed8; }
+        .btn-load { background: #7c3aed; color: white; }
+        .btn-load:hover { background: #6d28d9; }
+        .btn-run { background: #16a34a; color: white; }
+        .btn-run:hover { background: #15803d; }
+        .btn-charge { background: #eab308; color: #000; }
+        .btn-charge:hover { background: #ca8a04; }
+        
+        #codeEditor {
+            flex: 1;
+            background: #0d1117;
+            color: #00ff00;
+            padding: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: none;
+            border: none;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            tab-size: 4;
+        }
+        
+        .console {
+            height: 200px;
+            background: #000;
+            border-top: 2px solid #333;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 11px;
+        }
+        
+        .hw-log { color: #60a5fa; }
+        .os-log { color: #00ff00; }
+        .err-log { color: #ff6666; }
+        
+        .phone-panel {
+            width: 500px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a1a;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .volume-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn-volume {
+            background: #444;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-volume:hover { background: #555; }
+        .btn-volume:active { transform: scale(0.95); }
+        
+        .phone-device {
+            background: #2a2a2a;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        .screen {
+            border: 4px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .inner-screen {
+            width: 240px;
+            height: 320px;
+            background: #000;
+            margin-bottom: 15px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: 70px 1fr 70px;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .control-row-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-phone {
+            background: #444;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 11px;
+        }
+        
+        .btn-phone:hover { background: #555; }
+        .btn-phone:active { transform: scale(0.95); }
+        .btn-arrow { padding: 8px; }
+        .btn-ok {
+            background: #16a34a;
+            border-radius: 50%;
+            padding: 12px;
+        }
+        .btn-ok:hover { background: #15803d; }
+        .btn-call {
+            background: #16a34a;
+            border-radius: 50%;
+            padding: 8px;
+        }
+        .btn-hangup {
+            background: #dc2626;
+            border-radius: 50%;
+            padding: 8px;
+        }
+        
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .btn-num {
+            background: #333;
+            padding: 12px;
+            font-size: 16px;
+        }
+        
+        .side-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .outer-screen-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .outer-screen {
+            width: 128px;
+            height: 128px;
+            background: #000;
+            border: 4px solid #444;
+            border-radius: 8px;
+        }
+        
+        .flip-btn {
+            padding: 10px 20px;
+            background: #7c3aed;
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .flip-btn:hover { background: #6d28d9; }
+        
+        .outer-label {
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        
+        .battery-info {
+            color: #666;
+            font-size: 10px;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-panel">
+            <div class="editor-header">
+                <div class="editor-title">PxP Flip OS</div>
+                <div class="button-group">
+                    <button class="btn-charge" onclick="toggleCharger()">⚡ Charge</button>
+                    <button class="btn-save" onclick="saveCode()">Save</button>
+                    <button class="btn-load" onclick="loadCode()">Load</button>
+                    <button class="btn-run" onclick="restartOS()">Restart</button>
+                </div>
+            </div>
+            <textarea id="codeEditor" spellcheck="false" placeholder="Paste OS code..."></textarea>
+            <div class="console" id="console">
+                <div style="color: #666; margin-bottom: 5px;">Console - Blue=Hardware, Green=OS, Red=Error</div>
+            </div>
+        </div>
+        
+        <div class="phone-panel">
+            <div class="volume-controls">
+                <button class="btn-volume" onmousedown="pressButton('VOL_UP')">+</button>
+                <button class="btn-volume" onmousedown="pressButton('VOL_DOWN')">−</button>
+            </div>
+            
+            <div class="phone-device">
+                <div class="screen inner-screen" id="innerScreen"></div>
+                
+                <div class="controls">
+                    <div class="control-row">
+                        <button class="btn-phone" onmousedown="pressButton('BTN_LEFT')">LEFT</button>
+                        <div class="control-row-center">
+                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_UP')">▲</button>
+                        </div>
+                        <button class="btn-phone" onmousedown="pressButton('BTN_RIGHT')">RIGHT</button>
+                    </div>
+                    
+                    <div class="control-row">
+                        <div></div>
+                        <div class="control-row-center">
+                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_LEFT')">◄</button>
+                            <button class="btn-phone btn-ok" onmousedown="pressButton('BTN_OK')">●</button>
+                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_RIGHT')">►</button>
+                        </div>
+                        <div></div>
+                    </div>
+                    
+                    <div class="control-row">
+                        <button class="btn-phone btn-call" onmousedown="pressButton('BTN_CALL')">☎</button>
+                        <div class="control-row-center">
+                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_DOWN')">▼</button>
+                        </div>
+                        <button class="btn-phone btn-hangup" 
+                                onmousedown="pressButton('BTN_HANGUP')" 
+                                onmouseup="releaseButton('BTN_HANGUP')">●</button>
+                    </div>
+                    
+                    <div class="numpad">
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_1')">1</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_2')">2</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_3')">3</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_4')">4</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_5')">5</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_6')">6</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_7')">7</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_8')">8</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_9')">9</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_STAR')">*</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_0')">0</button>
+                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_HASH')">#</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="side-controls">
+                <div class="outer-screen-container">
+                    <div class="outer-label">External Screen</div>
+                    <div class="outer-screen" id="outerScreen"></div>
+                </div>
+                <button class="btn-phone flip-btn" onclick="toggleFlip()">
+                    <span id="flipText">Close Flip</span>
+                </button>
+                <div class="battery-info" id="batteryInfo">Battery: 1000 mAh</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== HARDWARE EMULATOR ====================
+        // Only physical hardware capabilities - NO LOGIC
+        
+        let hardware = {
+            battery: 1000,
+            batteryPercent: 100,
+            charging: false,
+            flipOpen: true,
+            osLoaded: false,
+            powered: false,
+            
+            innerBrightness: 100,
+            outerBrightness: 0,
+            
+            hangupHoldStart: 0,
+            hangupHoldTimer: null,
+            
+            innerContentCanvas: null,
+            outerContentCanvas: null
+        };
+        
+        // Display hardware
+        const display = {
+            canvas: null,
+            ctx: null,
+            init() {
+                if (!this.canvas) {
+                    this.canvas = document.createElement('canvas');
+                    this.canvas.width = 240;
+                    this.canvas.height = 320;
+                    this.canvas.style.width = '100%';
+                    this.canvas.style.height = '100%';
+                    this.canvas.style.imageRendering = 'pixelated';
+                    this.ctx = this.canvas.getContext('2d');
+                    document.getElementById('innerScreen').appendChild(this.canvas);
+                }
+                return this.ctx;
+            },
+            clear() {
+                const ctx = this.init();
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, 240, 320);
+            }
+        };
+        
+        const outerDisplay = {
+            canvas: null,
+            ctx: null,
+            init() {
+                if (!this.canvas) {
+                    this.canvas = document.createElement('canvas');
+                    this.canvas.width = 128;
+                    this.canvas.height = 128;
+                    this.canvas.style.width = '100%';
+                    this.canvas.style.height = '100%';
+                    this.canvas.style.imageRendering = 'pixelated';
+                    this.ctx = this.canvas.getContext('2d');
+                    document.getElementById('outerScreen').appendChild(this.canvas);
+                }
+                return this.ctx;
+            },
+            clear() {
+                const ctx = this.init();
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, 128, 128);
+            }
+        };
+        
+        // Initialize content buffers
+        function initContentBuffers() {
+            if (!hardware.innerContentCanvas) {
+                hardware.innerContentCanvas = document.createElement('canvas');
+                hardware.innerContentCanvas.width = 240;
+                hardware.innerContentCanvas.height = 320;
+            }
+            if (!hardware.outerContentCanvas) {
+                hardware.outerContentCanvas = document.createElement('canvas');
+                hardware.outerContentCanvas.width = 128;
+                hardware.outerContentCanvas.height = 128;
+            }
+        }
+        
+        initContentBuffers();
+        
+        // Logging
+        function hwLog(msg) {
+            const el = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'hw-log';
+            line.textContent = `[HW] ${msg}`;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        function osLog(msg) {
+            const el = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'os-log';
+            line.textContent = `[OS] ${msg}`;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        function errLog(msg) {
+            const el = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'err-log';
+            line.textContent = `[ERR] ${msg}`;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        // ==================== HARDWARE API - ONLY PHYSICAL OPERATIONS ====================
+        
+        // Set brightness instantly (0-100)
+        function setInnerBrightness(brightness) {
+            hardware.innerBrightness = brightness;
+            renderInnerScreen();
+        }
+        
+        function setOuterBrightness(brightness) {
+            hardware.outerBrightness = brightness;
+            renderOuterScreen();
+        }
+        
+        // Render screens with brightness applied
+        function renderInnerScreen() {
+            const displayCtx = display.init();
+            
+            displayCtx.clearRect(0, 0, 240, 320);
+            displayCtx.drawImage(hardware.innerContentCanvas, 0, 0);
+            
+            if (hardware.innerBrightness < 100 && hardware.innerBrightness > 0) {
+                displayCtx.save();
+                displayCtx.globalAlpha = 1 - (hardware.innerBrightness / 100);
+                displayCtx.fillStyle = '#000000';
+                displayCtx.fillRect(0, 0, 240, 320);
+                displayCtx.restore();
+            } else if (hardware.innerBrightness === 0) {
+                displayCtx.fillStyle = '#000000';
+                displayCtx.fillRect(0, 0, 240, 320);
+            }
+        }
+        
+        function renderOuterScreen() {
+            const displayCtx = outerDisplay.init();
+            
+            displayCtx.clearRect(0, 0, 128, 128);
+            displayCtx.drawImage(hardware.outerContentCanvas, 0, 0);
+            
+            if (hardware.outerBrightness > 0 && hardware.outerBrightness < 100) {
+                displayCtx.save();
+                displayCtx.globalAlpha = 1 - (hardware.outerBrightness / 100);
+                displayCtx.fillStyle = '#000000';
+                displayCtx.fillRect(0, 0, 128, 128);
+                displayCtx.restore();
+            } else if (hardware.outerBrightness === 0) {
+                displayCtx.fillStyle = '#000000';
+                displayCtx.fillRect(0, 0, 128, 128);
+            }
+        }
+        
+        function requestInnerFrame() {
+            if (hardware.osLoaded && typeof window.drawInnerScreen === 'function') {
+                const ctx = hardware.innerContentCanvas.getContext('2d');
+                window.drawInnerScreen(ctx);
+                renderInnerScreen();
+            }
+        }
+        
+        function requestOuterFrame() {
+            if (hardware.osLoaded && typeof window.drawOuterScreen === 'function') {
+                const ctx = hardware.outerContentCanvas.getContext('2d');
+                window.drawOuterScreen(ctx);
+                renderOuterScreen();
+            }
+        }
+        
+        // Battery simulation
+        function updateBattery() {
+            if (hardware.charging && hardware.battery < 1000) {
+                hardware.battery += 2;
+                if (hardware.battery > 1000) hardware.battery = 1000;
+            } else if (!hardware.charging && hardware.battery > 0) {
+                let drain = 0.1;
+                if (hardware.flipOpen && hardware.innerBrightness > 0) {
+                    drain = 0.2;
+                }
+                if (!hardware.flipOpen && hardware.outerBrightness > 0) {
+                    drain = 0.15;
+                }
+                hardware.battery -= drain;
+                if (hardware.battery < 0) hardware.battery = 0;
+            }
+            
+            hardware.batteryPercent = Math.floor((hardware.battery / 1000) * 100);
+            
+            document.getElementById('batteryInfo').textContent = 
+                `Battery: ${Math.floor(hardware.battery)} mAh ${hardware.charging ? '⚡' : ''}`;
+            
+            if (hardware.osLoaded && typeof window.onBatteryChange === 'function') {
+                window.onBatteryChange(hardware.batteryPercent);
+            }
+            
+            if (hardware.battery === 0 && hardware.powered) {
+                hwLog('Battery dead - powering off');
+                hardware.powered = false;
+                hardware.innerBrightness = 0;
+                hardware.outerBrightness = 0;
+                display.clear();
+                outerDisplay.clear();
+                
+                if (hardware.osLoaded && typeof window.onPowerOff === 'function') {
+                    window.onPowerOff();
+                }
+            }
+        }
+        
+        setInterval(updateBattery, 1000);
+        
+        function toggleCharger() {
+            hardware.charging = !hardware.charging;
+            hwLog(`Charger ${hardware.charging ? 'CONNECTED' : 'DISCONNECTED'}`);
+        }
+        
+        // ==================== BUTTON HANDLERS ====================
+        
+        function pressButton(btn) {
+            hwLog(`BTN_PRESS: ${btn}`);
+            
+            if (btn === "BTN_HANGUP") {
+                hardware.hangupHoldStart = Date.now();
+                hardware.hangupHoldTimer = setTimeout(() => {
+                    if (hardware.hangupHoldStart > 0) {
+                        const holdTime = Date.now() - hardware.hangupHoldStart;
+                        if (holdTime >= 3000) {
+                            if (!hardware.powered) {
+                                hwLog('POWER ON');
+                                hardware.powered = true;
+                                hardware.innerBrightness = 100;
+                                
+                                if (hardware.osLoaded && typeof window.onPowerOn === 'function') {
+                                    window.onPowerOn();
+                                }
+                            } else {
+                                hwLog('POWER OFF');
+                                hardware.powered = false;
+                                hardware.innerBrightness = 0;
+                                hardware.outerBrightness = 0;
+                                display.clear();
+                                outerDisplay.clear();
+                                
+                                if (hardware.osLoaded && typeof window.onPowerOff === 'function') {
+                                    window.onPowerOff();
+                                }
+                            }
+                        }
+                    }
+                }, 3000);
+                return;
+            }
+            
+            if (!hardware.flipOpen && (btn === 'VOL_UP' || btn === 'VOL_DOWN')) {
+                if (hardware.osLoaded && typeof window.onVolumePress === 'function') {
+                    window.onVolumePress();
+                }
+                return;
+            }
+            
+            if (!hardware.flipOpen) {
+                return;
+            }
+            
+            if (hardware.osLoaded && typeof window.onButtonPress === 'function') {
+                window.onButtonPress(btn);
+            }
+        }
+        
+        function releaseButton(btn) {
+            hwLog(`BTN_RELEASE: ${btn}`);
+            
+            if (btn === "BTN_HANGUP") {
+                hardware.hangupHoldStart = 0;
+                if (hardware.hangupHoldTimer) {
+                    clearTimeout(hardware.hangupHoldTimer);
+                    hardware.hangupHoldTimer = null;
+                }
+            }
+            
+            if (hardware.osLoaded && typeof window.onButtonRelease === 'function') {
+                window.onButtonRelease(btn);
+            }
+        }
+        
+        function toggleFlip() {
+            hardware.flipOpen = !hardware.flipOpen;
+            document.getElementById('flipText').textContent = 
+                hardware.flipOpen ? 'Close Flip' : 'Open Flip';
+            hwLog(`FLIP: ${hardware.flipOpen ? 'OPEN' : 'CLOSED'}`);
+            
+            if (hardware.osLoaded && typeof window.onFlipChange === 'function') {
+                window.onFlipChange(hardware.flipOpen);
+            }
+        }
+        
+        // ==================== OS LOADING ====================
+        
+        function loadOSCode() {
+            const code = document.getElementById('codeEditor').value;
+            if (!code.trim()) return false;
+            
+            try {
+                window.printf = osLog;
+                window.display = display;
+                window.outerDisplay = outerDisplay;
+                
+                window.hardwareAPI = {
+                    getBatteryPercent: () => hardware.batteryPercent,
+                    isFlipOpen: () => hardware.flipOpen,
+                    getInnerBrightness: () => hardware.innerBrightness,
+                    getOuterBrightness: () => hardware.outerBrightness,
+                    requestInnerFrame: requestInnerFrame,
+                    requestOuterFrame: requestOuterFrame,
+                    setInnerBrightness: setInnerBrightness,
+                    setOuterBrightness: setOuterBrightness
+                };
+                
+                (1, eval)(code);
+                hardware.osLoaded = true;
+                return true;
+            } catch (error) {
+                errLog(error.message);
+                return false;
+            }
+        }
+        
+        function restartOS() {
+            display.clear();
+            outerDisplay.clear();
+            
+            if (hardware.hangupHoldTimer) {
+                clearTimeout(hardware.hangupHoldTimer);
+                hardware.hangupHoldTimer = null;
+            }
+            
+            hardware.osLoaded = false;
+            hardware.powered = false;
+            hardware.flipOpen = true;
+            hardware.innerBrightness = 100;
+            hardware.outerBrightness = 0;
+            
+            document.getElementById('flipText').textContent = 'Close Flip';
+            hwLog('RESTART');
+            
+            if (loadOSCode() && typeof window.osInit === 'function') {
+                window.osInit();
+            }
+        }
+        
+        function saveCode() {
+            const code = document.getElementById('codeEditor').value;
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pxp_os.js';
+            a.click();
+            URL.revokeObjectURL(url);
+            hwLog('Code saved');
+        }
+        
+        function loadCode() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.js,.txt';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        document.getElementById('codeEditor').value = e.target.result;
+                        hwLog(`Loaded ${file.name}`);
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+        
+        hwLog('Emulator ready');
+    </script>
+</body>
+</html>
