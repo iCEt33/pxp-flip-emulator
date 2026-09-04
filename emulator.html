@@ -1,736 +1,842 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PxP Flip Phone Emulator</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .container { display: flex; height: 100vh; }
-        
-        .editor-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 2px solid #333;
-        }
-        
-        .editor-header {
-            background: #1a1a1a;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #333;
-        }
-        
-        .editor-title {
-            color: #00ff00;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        
-        .button-group { display: flex; gap: 10px; }
-        
-        button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        
-        .btn-save { background: #2563eb; color: white; }
-        .btn-save:hover { background: #1d4ed8; }
-        .btn-load { background: #7c3aed; color: white; }
-        .btn-load:hover { background: #6d28d9; }
-        .btn-run { background: #16a34a; color: white; }
-        .btn-run:hover { background: #15803d; }
-        .btn-charge { background: #eab308; color: #000; }
-        .btn-charge:hover { background: #ca8a04; }
-        
-        #codeEditor {
-            flex: 1;
-            background: #0d1117;
-            color: #00ff00;
-            padding: 20px;
-            font-size: 13px;
-            line-height: 1.6;
-            resize: none;
-            border: none;
-            outline: none;
-            font-family: 'Courier New', monospace;
-            tab-size: 4;
-        }
-        
-        .console {
-            height: 200px;
-            background: #000;
-            border-top: 2px solid #333;
-            padding: 10px;
-            overflow-y: auto;
-            font-size: 11px;
-        }
-        
-        .hw-log { color: #60a5fa; }
-        .os-log { color: #00ff00; }
-        .err-log { color: #ff6666; }
-        
-        .phone-panel {
-            width: 500px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            background: #1a1a1a;
-            padding: 20px;
-            gap: 20px;
-        }
-        
-        .volume-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .btn-volume {
-            background: #444;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .btn-volume:hover { background: #555; }
-        .btn-volume:active { transform: scale(0.95); }
-        
-        .phone-device {
-            background: #2a2a2a;
-            border-radius: 30px;
-            padding: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        
-        .screen {
-            border: 4px solid #444;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .inner-screen {
-            width: 240px;
-            height: 320px;
-            background: #000;
-            margin-bottom: 15px;
-        }
-        
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .control-row {
-            display: grid;
-            grid-template-columns: 70px 1fr 70px;
-            gap: 8px;
-            align-items: center;
-        }
-        
-        .control-row-center {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-phone {
-            background: #444;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: white;
-            font-weight: bold;
-            transition: all 0.2s;
-            font-size: 11px;
-        }
-        
-        .btn-phone:hover { background: #555; }
-        .btn-phone:active { transform: scale(0.95); }
-        .btn-arrow { padding: 8px; }
-        .btn-ok {
-            background: #16a34a;
-            border-radius: 50%;
-            padding: 12px;
-        }
-        .btn-ok:hover { background: #15803d; }
-        .btn-call {
-            background: #16a34a;
-            border-radius: 50%;
-            padding: 8px;
-        }
-        .btn-hangup {
-            background: #dc2626;
-            border-radius: 50%;
-            padding: 8px;
-        }
-        
-        .numpad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-top: 8px;
-        }
-        
-        .btn-num {
-            background: #333;
-            padding: 12px;
-            font-size: 16px;
-        }
-        
-        .side-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 100%;
-        }
-        
-        .outer-screen-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .outer-screen {
-            width: 128px;
-            height: 128px;
-            background: #000;
-            border: 4px solid #444;
-            border-radius: 8px;
-        }
-        
-        .flip-btn {
-            padding: 10px 20px;
-            background: #7c3aed;
-            color: white;
-            border-radius: 8px;
-        }
-        
-        .flip-btn:hover { background: #6d28d9; }
-        
-        .outer-label {
-            color: #666;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-        
-        .battery-info {
-            color: #666;
-            font-size: 10px;
-            margin-top: 10px;
-            text-align: center;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PxP Flip Phone Emulator</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Courier New',monospace; background:#0a0a0a; color:#0f0; height:100vh; overflow:hidden; }
+  .container { display:flex; height:100vh; }
+
+  /* ---- left: the code, and the world the phone lives in ---- */
+  .editor-panel { flex:1 1 auto; min-width:320px; display:flex; flex-direction:column; border-right:2px solid #333; }
+  .editor-header { background:#1a1a1a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #333; gap:10px; }
+  .editor-title { color:#0f0; font-weight:bold; font-size:15px; white-space:nowrap; }
+  .button-group { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  button { padding:7px 12px; border:none; border-radius:4px; cursor:pointer; font-family:inherit; font-size:12px; font-weight:bold; transition:background .15s; }
+  .btn-save{background:#2563eb;color:#fff} .btn-save:hover{background:#1d4ed8}
+  .btn-load{background:#7c3aed;color:#fff} .btn-load:hover{background:#6d28d9}
+  .btn-run{background:#16a34a;color:#fff}  .btn-run:hover{background:#15803d}
+  .btn-charge{background:#eab308;color:#000} .btn-charge:hover{background:#ca8a04}
+  #codeEditor { flex:1 1 auto; min-height:80px; background:#0d1117; color:#0f0; padding:14px; font-size:12px; line-height:1.5; resize:none; border:none; outline:none; font-family:'Courier New',monospace; tab-size:4; }
+
+  /* ---- the hardware panel: things a real phone gets from the world ---- */
+  .hw-panel { background:#141414; border-top:2px solid #333; padding:9px 14px; font-size:11px; flex:0 0 auto; }
+  .hw-title { color:#666; text-transform:uppercase; letter-spacing:1px; margin-bottom:7px; }
+  .hw-row { display:flex; gap:7px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+  .hw-row label { color:#7a7a7a; }
+  .hw-panel input[type=text] { background:#0d1117; border:1px solid #333; color:#0f0; padding:5px 7px; border-radius:3px; font-family:inherit; font-size:11px; }
+  .hw-panel input[type=range] { width:100px; }
+  .btn-hw { background:#333; color:#ccc; padding:5px 9px; font-size:11px; }
+  .btn-hw:hover { background:#444; }
+  .btn-hw.on { background:#16a34a; color:#fff; }
+  .btn-hw.warn { background:#b45309; color:#fff; }
+  .btn-ring { background:#16a34a; color:#fff; }
+  .btn-sms  { background:#2563eb; color:#fff; }
+
+  .console { flex:0 0 auto; height:132px; background:#000; border-top:2px solid #333; padding:8px; overflow-y:auto; font-size:11px; }
+  .hw-log{color:#60a5fa} .os-log{color:#0f0} .err-log{color:#f66}
+
+  /* ---- right: the phone itself ----
+     Fixed width, because the device is a fixed size and squeezing it is what
+     pushed the outer screen off the edge before. It scrolls rather than clips,
+     and scales down on short windows so a laptop still sees the whole phone. */
+  .phone-panel {
+    flex:0 0 600px; width:600px;
+    display:flex; align-items:flex-start; justify-content:center;
+    background:#1a1a1a; padding:16px 12px; overflow:auto;
+  }
+  .phone-stage { display:flex; gap:16px; align-items:flex-start; transform-origin:top center; }
+  @media (max-height: 900px) { .phone-stage { transform:scale(.90); } }
+  @media (max-height: 810px) { .phone-stage { transform:scale(.80); } }
+  @media (max-height: 720px) { .phone-stage { transform:scale(.70); } }
+
+  .volume-controls { display:flex; flex-direction:column; gap:12px; padding-top:120px; }
+  .btn-volume { background:#444; width:44px; height:44px; border-radius:50%; color:#fff; font-size:19px; }
+  .btn-volume:hover{background:#555}
+
+  .phone-device { background:#2a2a2a; border-radius:26px; padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.5); }
+  .screen { border:4px solid #444; border-radius:8px; overflow:hidden; }
+  .inner-screen { width:240px; height:320px; background:#000; margin-bottom:12px; }
+  .controls { display:flex; flex-direction:column; gap:8px; }
+  .control-row { display:grid; grid-template-columns:64px 1fr 64px; gap:6px; align-items:center; }
+  .control-row-center { display:flex; justify-content:center; align-items:center; gap:8px; }
+  .btn-phone { background:#444; padding:10px 14px; border-radius:6px; color:#fff; font-size:11px; }
+  .btn-phone:hover{background:#555} .btn-phone:active{transform:scale(.95)}
+  .btn-arrow{padding:7px 10px}
+  .btn-ok{background:#16a34a;border-radius:50%;padding:11px 13px}
+  .btn-call{background:#16a34a;border-radius:50%;padding:8px}
+  .btn-hangup{background:#dc2626;border-radius:50%;padding:8px}
+  .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:6px; }
+  .btn-num { background:#333; padding:9px; font-size:15px; }
+
+  .side-controls { display:flex; flex-direction:column; gap:12px; padding-top:120px; align-items:center; }
+  .outer-screen-container { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .outer-screen { width:128px; height:128px; background:#000; border:4px solid #444; border-radius:8px; }
+  .flip-btn { padding:10px 16px; background:#7c3aed; color:#fff; border-radius:8px; }
+  .flip-btn:hover{background:#6d28d9}
+  .outer-label { color:#666; font-size:10px; text-transform:uppercase; letter-spacing:1px; }
+  .battery-info { color:#666; font-size:10px; text-align:center; }
+  .keyhint { color:#555; font-size:10px; text-align:center; line-height:1.6; max-width:140px; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="editor-panel">
-            <div class="editor-header">
-                <div class="editor-title">PxP Flip OS</div>
-                <div class="button-group">
-                    <button class="btn-charge" onclick="toggleCharger()">⚡ Charge</button>
-                    <button class="btn-save" onclick="saveCode()">Save</button>
-                    <button class="btn-load" onclick="loadCode()">Load</button>
-                    <button class="btn-run" onclick="restartOS()">Restart</button>
-                </div>
-            </div>
-            <textarea id="codeEditor" spellcheck="false" placeholder="Paste OS code..."></textarea>
-            <div class="console" id="console">
-                <div style="color: #666; margin-bottom: 5px;">Console - Blue=Hardware, Green=OS, Red=Error</div>
-            </div>
-        </div>
-        
-        <div class="phone-panel">
-            <div class="volume-controls">
-                <button class="btn-volume" onmousedown="pressButton('VOL_UP')">+</button>
-                <button class="btn-volume" onmousedown="pressButton('VOL_DOWN')">−</button>
-            </div>
-            
-            <div class="phone-device">
-                <div class="screen inner-screen" id="innerScreen"></div>
-                
-                <div class="controls">
-                    <div class="control-row">
-                        <button class="btn-phone" onmousedown="pressButton('BTN_LEFT')">LEFT</button>
-                        <div class="control-row-center">
-                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_UP')">▲</button>
-                        </div>
-                        <button class="btn-phone" onmousedown="pressButton('BTN_RIGHT')">RIGHT</button>
-                    </div>
-                    
-                    <div class="control-row">
-                        <div></div>
-                        <div class="control-row-center">
-                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_LEFT')">◄</button>
-                            <button class="btn-phone btn-ok" onmousedown="pressButton('BTN_OK')">●</button>
-                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_RIGHT')">►</button>
-                        </div>
-                        <div></div>
-                    </div>
-                    
-                    <div class="control-row">
-                        <button class="btn-phone btn-call" onmousedown="pressButton('BTN_CALL')">☎</button>
-                        <div class="control-row-center">
-                            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_DOWN')">▼</button>
-                        </div>
-                        <button class="btn-phone btn-hangup" 
-                                onmousedown="pressButton('BTN_HANGUP')" 
-                                onmouseup="releaseButton('BTN_HANGUP')">●</button>
-                    </div>
-                    
-                    <div class="numpad">
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_1')">1</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_2')">2</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_3')">3</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_4')">4</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_5')">5</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_6')">6</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_7')">7</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_8')">8</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_9')">9</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_STAR')">*</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_0')">0</button>
-                        <button class="btn-phone btn-num" onmousedown="pressButton('NUM_HASH')">#</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="side-controls">
-                <div class="outer-screen-container">
-                    <div class="outer-label">External Screen</div>
-                    <div class="outer-screen" id="outerScreen"></div>
-                </div>
-                <button class="btn-phone flip-btn" onclick="toggleFlip()">
-                    <span id="flipText">Close Flip</span>
-                </button>
-                <div class="battery-info" id="batteryInfo">Battery: 1000 mAh</div>
-            </div>
-        </div>
+<div class="container">
+  <div class="editor-panel">
+    <div class="editor-header">
+      <div class="editor-title">PxP Flip OS</div>
+      <div class="button-group">
+        <button class="btn-charge" onclick="toggleCharger()">Charge</button>
+        <button class="btn-save" onclick="saveCode()">Save</button>
+        <button class="btn-load" onclick="loadCode()">Load</button>
+        <button class="btn-run" onclick="restartOS()">Restart</button>
+      </div>
+    </div>
+    <textarea id="codeEditor" spellcheck="false" placeholder="Load pxp_os.js, then press Restart."></textarea>
+
+    <div class="hw-panel">
+      <div class="hw-title">Hardware simulation &mdash; things a real phone gets from the world</div>
+      <div class="hw-row">
+        <label>Call from</label>
+        <input type="text" id="hwCaller" value="+36701234567" size="14">
+        <button class="btn-hw btn-ring" onclick="simIncomingCall()">Ring</button>
+        <button class="btn-hw" onclick="simRemoteAnswer()">They pick up</button>
+        <button class="btn-hw" onclick="simRemoteHangup()">Far end hangs up</button>
+      </div>
+      <div class="hw-row">
+        <label>Text from</label>
+        <input type="text" id="hwSmsFrom" value="+36701234567" size="14">
+        <input type="text" id="hwSmsBody" value="are you still up?" size="24">
+        <button class="btn-hw btn-sms" onclick="simIncomingSMS()">Send</button>
+      </div>
+      <div class="hw-row">
+        <button class="btn-hw on" id="hwSimBtn" onclick="toggleSim()">SIM in</button>
+        <button class="btn-hw on" id="hwPinBtn" onclick="toggleSimPin()">PIN 1234</button>
+        <button class="btn-hw on" id="hwRegBtn" onclick="toggleReg()">Registered</button>
+        <button class="btn-hw on" id="hwSdBtn"  onclick="toggleSd()">SD card in</button>
+        <label>Signal</label>
+        <input type="range" id="hwSignal" min="0" max="31" value="24" oninput="setSignal(this.value)">
+        <span id="hwSignalVal" style="color:#7a7a7a">24</span>
+      </div>
     </div>
 
-    <script>
-        // ==================== HARDWARE EMULATOR ====================
-        // Only physical hardware capabilities - NO LOGIC
-        
-        let hardware = {
-            battery: 1000,
-            batteryPercent: 100,
-            charging: false,
-            flipOpen: true,
-            osLoaded: false,
-            powered: false,
-            
-            innerBrightness: 100,
-            outerBrightness: 0,
-            
-            hangupHoldStart: 0,
-            hangupHoldTimer: null,
-            
-            innerContentCanvas: null,
-            outerContentCanvas: null
-        };
-        
-        // Display hardware
-        const display = {
-            canvas: null,
-            ctx: null,
-            init() {
-                if (!this.canvas) {
-                    this.canvas = document.createElement('canvas');
-                    this.canvas.width = 240;
-                    this.canvas.height = 320;
-                    this.canvas.style.width = '100%';
-                    this.canvas.style.height = '100%';
-                    this.canvas.style.imageRendering = 'pixelated';
-                    this.ctx = this.canvas.getContext('2d');
-                    document.getElementById('innerScreen').appendChild(this.canvas);
-                }
-                return this.ctx;
-            },
-            clear() {
-                const ctx = this.init();
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, 240, 320);
-            }
-        };
-        
-        const outerDisplay = {
-            canvas: null,
-            ctx: null,
-            init() {
-                if (!this.canvas) {
-                    this.canvas = document.createElement('canvas');
-                    this.canvas.width = 128;
-                    this.canvas.height = 128;
-                    this.canvas.style.width = '100%';
-                    this.canvas.style.height = '100%';
-                    this.canvas.style.imageRendering = 'pixelated';
-                    this.ctx = this.canvas.getContext('2d');
-                    document.getElementById('outerScreen').appendChild(this.canvas);
-                }
-                return this.ctx;
-            },
-            clear() {
-                const ctx = this.init();
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, 128, 128);
-            }
-        };
-        
-        // Initialize content buffers
-        function initContentBuffers() {
-            if (!hardware.innerContentCanvas) {
-                hardware.innerContentCanvas = document.createElement('canvas');
-                hardware.innerContentCanvas.width = 240;
-                hardware.innerContentCanvas.height = 320;
-            }
-            if (!hardware.outerContentCanvas) {
-                hardware.outerContentCanvas = document.createElement('canvas');
-                hardware.outerContentCanvas.width = 128;
-                hardware.outerContentCanvas.height = 128;
-            }
-        }
-        
-        initContentBuffers();
-        
-        // Logging
-        function hwLog(msg) {
-            const el = document.getElementById('console');
-            const line = document.createElement('div');
-            line.className = 'hw-log';
-            line.textContent = `[HW] ${msg}`;
-            el.appendChild(line);
-            el.scrollTop = el.scrollHeight;
-        }
-        
-        function osLog(msg) {
-            const el = document.getElementById('console');
-            const line = document.createElement('div');
-            line.className = 'os-log';
-            line.textContent = `[OS] ${msg}`;
-            el.appendChild(line);
-            el.scrollTop = el.scrollHeight;
-        }
-        
-        function errLog(msg) {
-            const el = document.getElementById('console');
-            const line = document.createElement('div');
-            line.className = 'err-log';
-            line.textContent = `[ERR] ${msg}`;
-            el.appendChild(line);
-            el.scrollTop = el.scrollHeight;
-        }
-        
-        // ==================== HARDWARE API - ONLY PHYSICAL OPERATIONS ====================
-        
-        // Set brightness instantly (0-100)
-        function setInnerBrightness(brightness) {
-            hardware.innerBrightness = brightness;
-            renderInnerScreen();
-        }
-        
-        function setOuterBrightness(brightness) {
-            hardware.outerBrightness = brightness;
-            renderOuterScreen();
-        }
-        
-        // Render screens with brightness applied
-        function renderInnerScreen() {
-            const displayCtx = display.init();
-            
-            displayCtx.clearRect(0, 0, 240, 320);
-            displayCtx.drawImage(hardware.innerContentCanvas, 0, 0);
-            
-            if (hardware.innerBrightness < 100 && hardware.innerBrightness > 0) {
-                displayCtx.save();
-                displayCtx.globalAlpha = 1 - (hardware.innerBrightness / 100);
-                displayCtx.fillStyle = '#000000';
-                displayCtx.fillRect(0, 0, 240, 320);
-                displayCtx.restore();
-            } else if (hardware.innerBrightness === 0) {
-                displayCtx.fillStyle = '#000000';
-                displayCtx.fillRect(0, 0, 240, 320);
-            }
-        }
-        
-        function renderOuterScreen() {
-            const displayCtx = outerDisplay.init();
-            
-            displayCtx.clearRect(0, 0, 128, 128);
-            displayCtx.drawImage(hardware.outerContentCanvas, 0, 0);
-            
-            if (hardware.outerBrightness > 0 && hardware.outerBrightness < 100) {
-                displayCtx.save();
-                displayCtx.globalAlpha = 1 - (hardware.outerBrightness / 100);
-                displayCtx.fillStyle = '#000000';
-                displayCtx.fillRect(0, 0, 128, 128);
-                displayCtx.restore();
-            } else if (hardware.outerBrightness === 0) {
-                displayCtx.fillStyle = '#000000';
-                displayCtx.fillRect(0, 0, 128, 128);
-            }
-        }
-        
-        function requestInnerFrame() {
-            if (hardware.osLoaded && typeof window.drawInnerScreen === 'function') {
-                const ctx = hardware.innerContentCanvas.getContext('2d');
-                window.drawInnerScreen(ctx);
-                renderInnerScreen();
-            }
-        }
-        
-        function requestOuterFrame() {
-            if (hardware.osLoaded && typeof window.drawOuterScreen === 'function') {
-                const ctx = hardware.outerContentCanvas.getContext('2d');
-                window.drawOuterScreen(ctx);
-                renderOuterScreen();
-            }
-        }
-        
-        // Battery simulation
-        function updateBattery() {
-            if (hardware.charging && hardware.battery < 1000) {
-                hardware.battery += 2;
-                if (hardware.battery > 1000) hardware.battery = 1000;
-            } else if (!hardware.charging && hardware.battery > 0) {
-                let drain = 0.1;
-                if (hardware.flipOpen && hardware.innerBrightness > 0) {
-                    drain = 0.2;
-                }
-                if (!hardware.flipOpen && hardware.outerBrightness > 0) {
-                    drain = 0.15;
-                }
-                hardware.battery -= drain;
-                if (hardware.battery < 0) hardware.battery = 0;
-            }
-            
-            hardware.batteryPercent = Math.floor((hardware.battery / 1000) * 100);
-            
-            document.getElementById('batteryInfo').textContent = 
-                `Battery: ${Math.floor(hardware.battery)} mAh ${hardware.charging ? '⚡' : ''}`;
-            
-            if (hardware.osLoaded && typeof window.onBatteryChange === 'function') {
-                window.onBatteryChange(hardware.batteryPercent);
-            }
-            
-            if (hardware.battery === 0 && hardware.powered) {
-                hwLog('Battery dead - powering off');
-                hardware.powered = false;
-                hardware.innerBrightness = 0;
-                hardware.outerBrightness = 0;
-                display.clear();
-                outerDisplay.clear();
-                
-                if (hardware.osLoaded && typeof window.onPowerOff === 'function') {
-                    window.onPowerOff();
-                }
-            }
-        }
-        
-        setInterval(updateBattery, 1000);
-        
-        function toggleCharger() {
-            hardware.charging = !hardware.charging;
-            hwLog(`Charger ${hardware.charging ? 'CONNECTED' : 'DISCONNECTED'}`);
-        }
-        
-        // ==================== BUTTON HANDLERS ====================
-        
-        function pressButton(btn) {
-            hwLog(`BTN_PRESS: ${btn}`);
-            
-            if (btn === "BTN_HANGUP") {
-                hardware.hangupHoldStart = Date.now();
-                hardware.hangupHoldTimer = setTimeout(() => {
-                    if (hardware.hangupHoldStart > 0) {
-                        const holdTime = Date.now() - hardware.hangupHoldStart;
-                        if (holdTime >= 3000) {
-                            if (!hardware.powered) {
-                                hwLog('POWER ON');
-                                hardware.powered = true;
-                                hardware.innerBrightness = 100;
-                                
-                                if (hardware.osLoaded && typeof window.onPowerOn === 'function') {
-                                    window.onPowerOn();
-                                }
-                            } else {
-                                hwLog('POWER OFF');
-                                hardware.powered = false;
-                                hardware.innerBrightness = 0;
-                                hardware.outerBrightness = 0;
-                                display.clear();
-                                outerDisplay.clear();
-                                
-                                if (hardware.osLoaded && typeof window.onPowerOff === 'function') {
-                                    window.onPowerOff();
-                                }
-                            }
-                        }
-                    }
-                }, 3000);
-                return;
-            }
-            
-            if (!hardware.flipOpen && (btn === 'VOL_UP' || btn === 'VOL_DOWN')) {
-                if (hardware.osLoaded && typeof window.onVolumePress === 'function') {
-                    window.onVolumePress();
-                }
-                return;
-            }
-            
-            if (!hardware.flipOpen) {
-                return;
-            }
-            
-            if (hardware.osLoaded && typeof window.onButtonPress === 'function') {
-                window.onButtonPress(btn);
-            }
-        }
-        
-        function releaseButton(btn) {
-            hwLog(`BTN_RELEASE: ${btn}`);
-            
-            if (btn === "BTN_HANGUP") {
-                hardware.hangupHoldStart = 0;
-                if (hardware.hangupHoldTimer) {
-                    clearTimeout(hardware.hangupHoldTimer);
-                    hardware.hangupHoldTimer = null;
-                }
-            }
-            
-            if (hardware.osLoaded && typeof window.onButtonRelease === 'function') {
-                window.onButtonRelease(btn);
-            }
-        }
-        
-        function toggleFlip() {
-            hardware.flipOpen = !hardware.flipOpen;
-            document.getElementById('flipText').textContent = 
-                hardware.flipOpen ? 'Close Flip' : 'Open Flip';
-            hwLog(`FLIP: ${hardware.flipOpen ? 'OPEN' : 'CLOSED'}`);
-            
-            if (hardware.osLoaded && typeof window.onFlipChange === 'function') {
-                window.onFlipChange(hardware.flipOpen);
-            }
-        }
-        
-        // ==================== OS LOADING ====================
-        
-        function loadOSCode() {
-            const code = document.getElementById('codeEditor').value;
-            if (!code.trim()) return false;
-            
-            try {
-                window.printf = osLog;
-                window.display = display;
-                window.outerDisplay = outerDisplay;
-                
-                window.hardwareAPI = {
-                    getBatteryPercent: () => hardware.batteryPercent,
-                    isFlipOpen: () => hardware.flipOpen,
-                    getInnerBrightness: () => hardware.innerBrightness,
-                    getOuterBrightness: () => hardware.outerBrightness,
-                    requestInnerFrame: requestInnerFrame,
-                    requestOuterFrame: requestOuterFrame,
-                    setInnerBrightness: setInnerBrightness,
-                    setOuterBrightness: setOuterBrightness
-                };
-                
-                (1, eval)(code);
-                hardware.osLoaded = true;
-                return true;
-            } catch (error) {
-                errLog(error.message);
-                return false;
-            }
-        }
-        
-        function restartOS() {
-            display.clear();
-            outerDisplay.clear();
-            
-            if (hardware.hangupHoldTimer) {
-                clearTimeout(hardware.hangupHoldTimer);
-                hardware.hangupHoldTimer = null;
-            }
-            
-            hardware.osLoaded = false;
-            hardware.powered = false;
-            hardware.flipOpen = true;
-            hardware.innerBrightness = 100;
-            hardware.outerBrightness = 0;
-            
-            document.getElementById('flipText').textContent = 'Close Flip';
-            hwLog('RESTART');
-            
-            if (loadOSCode() && typeof window.osInit === 'function') {
-                window.osInit();
-            }
-        }
-        
-        function saveCode() {
-            const code = document.getElementById('codeEditor').value;
-            const blob = new Blob([code], { type: 'text/javascript' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pxp_os.js';
-            a.click();
-            URL.revokeObjectURL(url);
-            hwLog('Code saved');
-        }
-        
-        function loadCode() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.js,.txt';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        document.getElementById('codeEditor').value = e.target.result;
-                        hwLog(`Loaded ${file.name}`);
-                    };
-                    reader.readAsText(file);
-                }
-            };
-            input.click();
-        }
-        
-        hwLog('Emulator ready');
-    </script>
+    <div class="console" id="console">
+      <div style="color:#666;margin-bottom:4px;">Console &mdash; blue = hardware, green = OS, red = error</div>
+    </div>
+  </div>
+
+  <div class="phone-panel">
+   <div class="phone-stage">
+    <div class="volume-controls">
+      <button class="btn-volume" onmousedown="pressButton('VOL_UP')"   onmouseup="releaseButton('VOL_UP')">+</button>
+      <button class="btn-volume" onmousedown="pressButton('VOL_DOWN')" onmouseup="releaseButton('VOL_DOWN')">&minus;</button>
+    </div>
+
+    <div class="phone-device">
+      <div class="screen inner-screen" id="innerScreen"></div>
+      <div class="controls">
+        <div class="control-row">
+          <button class="btn-phone" onmousedown="pressButton('BTN_LEFT')" onmouseup="releaseButton('BTN_LEFT')" onmouseleave="releaseButton('BTN_LEFT')">LEFT</button>
+          <div class="control-row-center"><button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_UP')" onmouseup="releaseButton('ARROW_UP')">&#9650;</button></div>
+          <button class="btn-phone" onmousedown="pressButton('BTN_RIGHT')" onmouseup="releaseButton('BTN_RIGHT')" onmouseleave="releaseButton('BTN_RIGHT')">RIGHT</button>
+        </div>
+        <div class="control-row">
+          <div></div>
+          <div class="control-row-center">
+            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_LEFT')" onmouseup="releaseButton('ARROW_LEFT')">&#9664;</button>
+            <button class="btn-phone btn-ok" onmousedown="pressButton('BTN_OK')" onmouseup="releaseButton('BTN_OK')">&#9679;</button>
+            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_RIGHT')" onmouseup="releaseButton('ARROW_RIGHT')">&#9654;</button>
+          </div>
+          <div></div>
+        </div>
+        <div class="control-row">
+          <button class="btn-phone btn-call" onmousedown="pressButton('BTN_CALL')" onmouseup="releaseButton('BTN_CALL')">&#9742;</button>
+          <div class="control-row-center"><button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_DOWN')" onmouseup="releaseButton('ARROW_DOWN')">&#9660;</button></div>
+          <button class="btn-phone btn-hangup" onmousedown="pressButton('BTN_HANGUP')" onmouseup="releaseButton('BTN_HANGUP')" onmouseleave="releaseButton('BTN_HANGUP')">&#9679;</button>
+        </div>
+        <div class="numpad">
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_1')" onmouseup="releaseButton('NUM_1')">1</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_2')" onmouseup="releaseButton('NUM_2')">2</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_3')" onmouseup="releaseButton('NUM_3')">3</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_4')" onmouseup="releaseButton('NUM_4')">4</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_5')" onmouseup="releaseButton('NUM_5')">5</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_6')" onmouseup="releaseButton('NUM_6')">6</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_7')" onmouseup="releaseButton('NUM_7')">7</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_8')" onmouseup="releaseButton('NUM_8')">8</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_9')" onmouseup="releaseButton('NUM_9')">9</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_STAR')" onmouseup="releaseButton('NUM_STAR')">*</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_0')" onmouseup="releaseButton('NUM_0')">0</button>
+          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_HASH')" onmouseup="releaseButton('NUM_HASH')">#</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-controls">
+      <div class="outer-screen-container">
+        <div class="outer-label">External Screen</div>
+        <div class="outer-screen" id="outerScreen"></div>
+      </div>
+      <button class="btn-phone flip-btn" onclick="toggleFlip()"><span id="flipText">Close Flip</span></button>
+      <div class="battery-info" id="batteryInfo">Battery: 1000 mAh</div>
+      <div class="keyhint">
+        hold P = power<br>
+        F = flip &nbsp; Tab = left<br>
+        Backspace = right<br>
+        Enter = OK &nbsp; ; = call<br>
+        Esc = hang up
+      </div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// HARDWARE EMULATOR
+// ============================================================================
+// Physical capabilities ONLY. No OS logic lives here. Anything the browser
+// cannot really do (a radio, a camera sensor, a flash chip) is faked here and
+// exposed through the same shape of API the firmware has, so the OS file above
+// stays a straight port of the C.
+// ============================================================================
+
+let hardware = {
+  battery: 1000, batteryPercent: 100, charging: false,
+  flipOpen: true, osLoaded: false, powered: false,
+  innerBrightness: 100, outerBrightness: 0,
+  hangupHoldStart: 0, hangupHoldTimer: null,
+  innerContentCanvas: null, outerContentCanvas: null,
+  // radio
+  simIn: true, simPinEnabled: true, simLocked: true, pinAttempts: 3,
+  registered: true, netReady: false, netTimer: null, signal: 24,
+  callState: 'idle',        // idle | ringing | dialing | active
+  callNumber: '', dialTimer: null,
+  // storage
+  sdIn: true
+};
+const SIM_PIN = '1234', SIM_PUK = '12345678';
+const NET_ATTACH_MS = 2000;   // how long the network takes to attach after unlock
+
+// ---------- displays ----------
+function makeDisplay(elId, w, h) {
+  return {
+    canvas: null, ctx: null,
+    init() {
+      if (!this.canvas) {
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = w; this.canvas.height = h;
+        this.canvas.style.width = '100%'; this.canvas.style.height = '100%';
+        this.canvas.style.display = 'block';
+        this.canvas.style.imageRendering = 'pixelated';
+        this.ctx = this.canvas.getContext('2d');
+        document.getElementById(elId).appendChild(this.canvas);
+      }
+      return this.ctx;
+    },
+    clear() { const c = this.init(); c.fillStyle = '#000'; c.fillRect(0, 0, w, h); }
+  };
+}
+const display = makeDisplay('innerScreen', 240, 320);
+const outerDisplay = makeDisplay('outerScreen', 128, 128);
+
+function initContentBuffers() {
+  if (!hardware.innerContentCanvas) {
+    hardware.innerContentCanvas = document.createElement('canvas');
+    hardware.innerContentCanvas.width = 240; hardware.innerContentCanvas.height = 320;
+  }
+  if (!hardware.outerContentCanvas) {
+    hardware.outerContentCanvas = document.createElement('canvas');
+    hardware.outerContentCanvas.width = 128; hardware.outerContentCanvas.height = 128;
+  }
+}
+initContentBuffers();
+
+// ---------- logging ----------
+function logLine(cls, txt) {
+  const el = document.getElementById('console');
+  const d = document.createElement('div');
+  d.className = cls; d.textContent = txt;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+  while (el.children.length > 400) el.removeChild(el.children[1]);
+}
+function hwLog(m)  { logLine('hw-log',  '[HW] ' + m); }
+function osLog(m)  { logLine('os-log',  '[OS] ' + m); }
+function errLog(m) { logLine('err-log', '[ERR] ' + m); }
+
+// ---------- brightness + frames ----------
+function setInnerBrightness(b) { hardware.innerBrightness = b; renderInnerScreen(); }
+function setOuterBrightness(b) { hardware.outerBrightness = b; renderOuterScreen(); }
+
+function paint(displayObj, contentCanvas, brightness, w, h) {
+  const c = displayObj.init();
+  c.clearRect(0, 0, w, h);
+  c.drawImage(contentCanvas, 0, 0);
+  if (brightness <= 0) { c.fillStyle = '#000'; c.fillRect(0, 0, w, h); }
+  else if (brightness < 100) {
+    c.save(); c.globalAlpha = 1 - brightness / 100;
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, h); c.restore();
+  }
+}
+function renderInnerScreen() { paint(display, hardware.innerContentCanvas, hardware.innerBrightness, 240, 320); }
+function renderOuterScreen() { paint(outerDisplay, hardware.outerContentCanvas, hardware.outerBrightness, 128, 128); }
+
+function requestInnerFrame() {
+  if (hardware.osLoaded && typeof window.drawInnerScreen === 'function') {
+    window.drawInnerScreen(hardware.innerContentCanvas.getContext('2d'));
+    renderInnerScreen();
+  }
+}
+function requestOuterFrame() {
+  if (hardware.osLoaded && typeof window.drawOuterScreen === 'function') {
+    window.drawOuterScreen(hardware.outerContentCanvas.getContext('2d'));
+    renderOuterScreen();
+  }
+}
+
+// ---------- audio: Web Audio square wave, same shape as the I2S generator ----
+//
+// ONE OSCILLATOR PER NOTE. This is not a detail, it is the whole reason
+// repeated notes sound like repeated notes.
+//
+// The firmware resets ringtoneSampleIx to 0 at every note boundary (see the
+// audioTask ringtone loop), so the square wave restarts its phase on each note.
+// Two identical notes in a row are therefore two separate attacks, not one long
+// tone. A single long-lived Web Audio oscillator that just gets retuned cannot
+// do that - the waveform runs straight through the boundary - which is why
+// Neo's sixteen 415 Hz beeps came out as one flat buzz.
+//
+// The ringtone composer solves it the same way: it builds an oscillator per
+// note and calls osc.stop() at 92% of the note length. That 8% release is what
+// separates the repeats audibly. GATE below is that number.
+const audio = {
+  ctx: null, seq: null, live: [], volume: 0.5,
+  GATE: 0.92,
+  ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      this.ctx = new AC();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return true;
+  },
+  // One note: its own oscillator, released early by (1 - gate). `at` is a time
+  // on the audio clock; leaving it out means now.
+  note(hz, ms, gate, at) {
+    if (hz <= 0) return;                       // hz 0 is a rest, play nothing
+    const g0 = (gate === undefined) ? this.GATE : gate;
+    const t0 = (at === undefined) ? this.ctx.currentTime : at;
+    const t1 = t0 + (ms / 1000) * g0;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'square';                       // the firmware generates a square
+    osc.frequency.value = hz;
+    g.gain.value = this.volume;
+    osc.connect(g); g.connect(this.ctx.destination);
+    osc.start(t0);
+    osc.stop(t1);
+    const self = this;
+    this.live.push(osc);
+    osc.onended = function () {
+      const i = self.live.indexOf(osc);
+      if (i >= 0) self.live.splice(i, 1);
+    };
+  },
+  // one short beep, e.g. the B6 pickup/hangup confirmation. No gate: it is a
+  // single tone with nothing after it to separate from.
+  tone(hz, ms) {
+    if (!this.ensure()) return;
+    this.note(hz, ms, 1);
+  },
+  // notes = [{hz, ms}], hz 0 is a rest. loop = keep going until stopped.
+  //
+  // A whole pass is scheduled ahead on the AUDIO clock, the way the composer
+  // does it, rather than one note per setTimeout. setTimeout drifts by several
+  // milliseconds under load, and on a 65 ms note that is audible as an uneven
+  // ring. Here the timer only decides when to queue the NEXT pass, and the pass
+  // continues from where the last one ended, so nothing drifts.
+  playMelody(notes, loop) {
+    if (!this.ensure()) return;
+    this.stop();
+    const self = this;
+    const totalMs = notes.reduce(function (s, n) { return s + n.ms; }, 0);
+    if (totalMs <= 0) return;
+    let cursor = this.ctx.currentTime + 0.03;   // small lead-in so nothing is late
+    const pass = function () {
+      // If the timer fired very late, do not schedule into the past - that
+      // bunches the whole pass into one instant.
+      if (cursor < self.ctx.currentTime) cursor = self.ctx.currentTime + 0.02;
+      for (const n of notes) {
+        self.note(n.hz, n.ms, undefined, cursor);
+        cursor += n.ms / 1000;
+      }
+      if (loop) self.seq = setTimeout(pass, Math.max(20, totalMs - 60));
+      else self.seq = null;
+    };
+    pass();
+  },
+  stop() {
+    if (this.seq) { clearTimeout(this.seq); this.seq = null; }
+    // Kill anything still sounding, so a hang-up cuts the note it is on rather
+    // than letting it ring out. Same intent as the firmware zeroing the DMA
+    // buffer on the falling edge.
+    // A pass is scheduled ahead, so some of these have not started yet. Giving
+    // stop() a time earlier than their start time means they never sound.
+    const now = this.ctx ? this.ctx.currentTime : 0;
+    const list = this.live.slice();
+    this.live.length = 0;
+    for (const o of list) { try { o.stop(now); } catch (e) {} }
+  },
+  setVolume(v) { this.volume = Math.max(0, Math.min(1, v)); }
+};
+
+// ---------- storage: stands in for LittleFS ----------
+const storage = {
+  read(key) {
+    try { const v = localStorage.getItem('pxp_' + key); return v === null ? null : JSON.parse(v); }
+    catch (e) { return null; }
+  },
+  write(key, value) {
+    try { localStorage.setItem('pxp_' + key, JSON.stringify(value)); return true; }
+    catch (e) { return false; }
+  }
+};
+
+// ---------- modem ----------
+function osCB(name) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  if (hardware.osLoaded && typeof window[name] === 'function') {
+    try { window[name].apply(null, args); }
+    catch (e) { errLog(name + ': ' + e.message); }
+  }
+}
+function simState() {
+  if (!hardware.simIn) return 'absent';
+  if (hardware.simLocked) return hardware.pinAttempts > 0 ? 'pin' : 'puk';
+  return 'ready';
+}
+
+// The network does not exist until the SIM is readable. The firmware bails out
+// of modemPoll() with `if (!simReady) { modemRegState = -1; modemSignalCSQ = 99; }`
+// before it ever asks AT+CREG?, so a locked SIM means no bars and no service.
+// Attaching then takes a moment, which is why a real phone sits on "searching"
+// for a second or two after you type the PIN.
+function simDropNetwork() {
+  if (hardware.netTimer) { clearTimeout(hardware.netTimer); hardware.netTimer = null; }
+  hardware.netReady = false;
+}
+function simAttachNetwork() {
+  simDropNetwork();
+  hwLog('+CREG: 0,2 (searching)');
+  hardware.netTimer = setTimeout(() => {
+    hardware.netTimer = null;
+    if (simState() !== 'ready') return;
+    hardware.netReady = true;
+    hwLog('+CREG: 0,1 (registered, home)');
+    osCB('onSimChange', hardware.simIn);
+  }, NET_ATTACH_MS);
+}
+function simLockNow() {
+  if (!hardware.simIn || !hardware.simPinEnabled) return;
+  hardware.simLocked = true;
+  hardware.pinAttempts = 3;
+  simDropNetwork();
+  hwLog('+CPIN: SIM PIN  (the PIN is ' + SIM_PIN + ', the PUK is ' + SIM_PUK + ')');
+}
+
+const modem = {
+  // CSQ reads 99 (unknown) while the SIM is unreadable, same as the firmware.
+  getSignal: () => (simState() === 'ready' && hardware.netReady) ? hardware.signal : 99,
+  hasSIM: () => hardware.simIn,
+  getSimState: simState,
+  isRegistered: () => simState() === 'ready' && hardware.registered && hardware.netReady,
+  getCallState: () => hardware.callState,
+  getCallNumber: () => hardware.callNumber,
+
+  // AT+SPIC -> +SPIC: <pin1>,<puk1>,<pin2>,<puk2>
+  // The card keeps the real counter, not the phone, which is the only honest
+  // way to tell someone how many tries they have left.
+  getPinAttempts() {
+    hwLog('+SPIC: ' + hardware.pinAttempts + ',10,3,10');
+    return { pin: hardware.pinAttempts, puk: 10 };
+  },
+
+  enterPin(pin) {
+    if (simState() !== 'pin') return { ok: false, state: simState(), attemptsLeft: hardware.pinAttempts };
+    if (pin === SIM_PIN) {
+      hardware.simLocked = false; hardware.pinAttempts = 3;
+      hwLog('+CPIN: READY');
+      updateSimButtons();
+      simAttachNetwork();
+      return { ok: true, state: 'ready', attemptsLeft: 3 };
+    }
+    hardware.pinAttempts--;
+    hwLog('+CME ERROR: incorrect password  (' + hardware.pinAttempts + ' left on the card)');
+    updateSimButtons();
+    return { ok: false, state: simState(), attemptsLeft: hardware.pinAttempts };
+  },
+  // Two arguments, like AT+CPIN="<puk>","<newpin>" - unblocking a SIM always
+  // sets a new PIN at the same time.
+  enterPuk(puk, newPin) {
+    if (simState() !== 'puk') return { ok: false, state: simState() };
+    if (puk === SIM_PUK) {
+      hardware.simLocked = false; hardware.pinAttempts = 3;
+      hwLog('+CPIN: READY  (new PIN set to ' + newPin + ' for this session)');
+      updateSimButtons();
+      simAttachNetwork();
+      return { ok: true, state: 'ready' };
+    }
+    hwLog('+CME ERROR: incorrect password (PUK)');
+    return { ok: false, state: 'puk' };
+  },
+
+  dial(number) {
+    if (!modem.isRegistered()) { hwLog('Dial refused: not registered'); return false; }
+    hardware.callState = 'dialing';
+    hardware.callNumber = number;
+    hwLog('ATD' + number + ';');
+    // The far end picks up after a moment. "They pick up" in the panel does the
+    // same thing sooner, and "Far end hangs up" cancels it.
+    if (hardware.dialTimer) clearTimeout(hardware.dialTimer);
+    hardware.dialTimer = setTimeout(() => {
+      hardware.dialTimer = null;
+      if (hardware.callState !== 'dialing') return;
+      hardware.callState = 'active';
+      hwLog('VOICE CALL: BEGIN');
+      osCB('onCallConnected');
+    }, 6000);
+    return true;
+  },
+  answer() {
+    if (hardware.callState !== 'ringing') return false;
+    hardware.callState = 'active';
+    hwLog('ATA');
+    return true;
+  },
+  hangup() {
+    if (hardware.callState === 'idle') return false;
+    if (hardware.dialTimer) { clearTimeout(hardware.dialTimer); hardware.dialTimer = null; }
+    hwLog('ATH');
+    hardware.callState = 'idle';
+    hardware.callNumber = '';
+    return true;
+  },
+  sendSMS(number, text) {
+    if (!modem.isRegistered()) { hwLog('SMS refused: not registered'); return false; }
+    hwLog('AT+CMGS to ' + number + ': ' + text);
+    // canned reply, so a thread has two sides to it
+    setTimeout(() => {
+      if (!hardware.simIn || !hardware.powered) return;
+      osCB('onSMSReceived', number, 'ok, talk later');
+    }, 5000);
+    return true;
+  }
+};
+
+// ---------- camera + SD: honest stubs ----------
+const camera = {
+  isReady: () => true,
+  // A real sensor frame would go here. The browser build paints a flat field
+  // with moving grain so the viewfinder looks alive without asking anyone for
+  // webcam permission.
+  drawPreview(ctx, w, h) {
+    ctx.fillStyle = '#0b1f0b';
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 420; i++) {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,255,0,0.06)' : 'rgba(0,0,0,0.10)';
+      ctx.fillRect((Math.random() * w) | 0, (Math.random() * h) | 0, 2, 2);
+    }
+    // a couple of soft bands, so a captured photo is not pure noise
+    for (let y = 0; y < h; y += 24) {
+      ctx.fillStyle = 'rgba(0,255,0,0.03)';
+      ctx.fillRect(0, y, w, 12);
+    }
+  }
+};
+const sdcard = {
+  isPresent: () => hardware.sdIn,
+  sizeMB: () => hardware.sdIn ? 14840 : 0,
+  usedMB: () => hardware.sdIn ? 12 : 0
+};
+
+// ---------- battery ----------
+function updateBattery() {
+  if (hardware.charging && hardware.battery < 1000) {
+    hardware.battery = Math.min(1000, hardware.battery + 2);
+  } else if (!hardware.charging && hardware.battery > 0) {
+    let drain = 0.1;
+    if (hardware.flipOpen && hardware.innerBrightness > 0) drain = 0.2;
+    if (!hardware.flipOpen && hardware.outerBrightness > 0) drain = 0.15;
+    hardware.battery = Math.max(0, hardware.battery - drain);
+  }
+  hardware.batteryPercent = Math.floor(hardware.battery / 10);
+  document.getElementById('batteryInfo').textContent =
+    'Battery: ' + Math.floor(hardware.battery) + ' mAh' + (hardware.charging ? ' (charging)' : '');
+  osCB('onBatteryChange', hardware.batteryPercent);
+
+  if (hardware.battery === 0 && hardware.powered) {
+    hwLog('Battery dead - powering off');
+    hardware.powered = false;
+    hardware.innerBrightness = 0; hardware.outerBrightness = 0;
+    display.clear(); outerDisplay.clear();
+    osCB('onPowerOff');
+  }
+}
+setInterval(updateBattery, 1000);
+function toggleCharger() {
+  hardware.charging = !hardware.charging;
+  hwLog('Charger ' + (hardware.charging ? 'CONNECTED' : 'DISCONNECTED'));
+}
+
+// ---------- hardware panel actions ----------
+function simIncomingCall() {
+  if (!hardware.powered) { hwLog('Phone is off'); return; }
+  if (!modem.isRegistered()) { hwLog('No network, cannot ring'); return; }
+  if (hardware.callState !== 'idle') { hwLog('Already in a call'); return; }
+  hardware.callNumber = document.getElementById('hwCaller').value.trim();
+  hardware.callState = 'ringing';
+  hwLog('RING');
+  if (hardware.callNumber) hwLog('+CLIP: "' + hardware.callNumber + '"');
+  audio.ensure();
+  osCB('onIncomingCall', hardware.callNumber);
+}
+function simRemoteAnswer() {
+  if (hardware.callState !== 'dialing') { hwLog('Nothing is dialing'); return; }
+  if (hardware.dialTimer) { clearTimeout(hardware.dialTimer); hardware.dialTimer = null; }
+  hardware.callState = 'active';
+  hwLog('VOICE CALL: BEGIN');
+  osCB('onCallConnected');
+}
+function simRemoteHangup() {
+  if (hardware.callState === 'idle') { hwLog('No call in progress'); return; }
+  if (hardware.dialTimer) { clearTimeout(hardware.dialTimer); hardware.dialTimer = null; }
+  const wasRinging = hardware.callState === 'ringing';
+  hardware.callState = 'idle';
+  hwLog(wasRinging ? 'Caller gave up (NO CARRIER)' : 'NO CARRIER');
+  osCB('onCallEnded', wasRinging ? 'missed' : 'remote');
+  hardware.callNumber = '';
+}
+function simIncomingSMS() {
+  if (!hardware.powered) { hwLog('Phone is off'); return; }
+  if (!modem.isRegistered()) { hwLog('No network, cannot receive'); return; }
+  const from = document.getElementById('hwSmsFrom').value.trim() || 'Unknown';
+  const body = document.getElementById('hwSmsBody').value;
+  hwLog('+CMT: "' + from + '"');
+  osCB('onSMSReceived', from, body);
+}
+function updateSimButtons() {
+  const b = document.getElementById('hwSimBtn');
+  b.classList.toggle('on', hardware.simIn);
+  b.textContent = hardware.simIn ? 'SIM in' : 'SIM out';
+  const p = document.getElementById('hwPinBtn');
+  const st = simState();
+  p.classList.toggle('on', hardware.simPinEnabled);
+  p.classList.toggle('warn', st === 'pin' || st === 'puk');
+  p.textContent = !hardware.simPinEnabled ? 'PIN off'
+                : st === 'puk'  ? 'PUK ' + SIM_PUK
+                : 'PIN ' + SIM_PIN + (st === 'pin' ? ' (locked)' : '');
+}
+function toggleSim() {
+  hardware.simIn = !hardware.simIn;
+  simDropNetwork();
+  if (hardware.simIn) {
+    hardware.pinAttempts = 3;
+    hardware.simLocked = hardware.simPinEnabled;   // a fresh card comes up locked
+    hwLog('SIM inserted');
+    if (!hardware.simLocked) simAttachNetwork();
+    else hwLog('+CPIN: SIM PIN');
+  } else {
+    hardware.simLocked = false;
+    hwLog('SIM removed');
+  }
+  updateSimButtons();
+  osCB('onSimChange', hardware.simIn);
+}
+// Whether this SIM has a PIN on it at all. On means it locks at every power-on,
+// which is how a normal phone with PIN enabled behaves.
+function toggleSimPin() {
+  hardware.simPinEnabled = !hardware.simPinEnabled;
+  hardware.pinAttempts = 3;
+  if (hardware.simPinEnabled) {
+    simLockNow();
+  } else {
+    hardware.simLocked = false;
+    hwLog('+CPIN: READY  (PIN disabled on this SIM)');
+    if (hardware.simIn) simAttachNetwork();
+  }
+  updateSimButtons();
+  osCB('onSimChange', hardware.simIn);
+}
+function toggleReg() {
+  hardware.registered = !hardware.registered;
+  const b = document.getElementById('hwRegBtn');
+  b.classList.toggle('on', hardware.registered);
+  b.textContent = hardware.registered ? 'Registered' : 'No network';
+  hwLog('Network ' + (hardware.registered ? 'registered' : 'lost'));
+  osCB('onSimChange', hardware.simIn);
+}
+function toggleSd() {
+  hardware.sdIn = !hardware.sdIn;
+  const b = document.getElementById('hwSdBtn');
+  b.classList.toggle('on', hardware.sdIn);
+  b.textContent = hardware.sdIn ? 'SD card in' : 'SD card out';
+  hwLog('SD card ' + (hardware.sdIn ? 'inserted' : 'removed'));
+}
+function setSignal(v) {
+  hardware.signal = parseInt(v, 10);
+  document.getElementById('hwSignalVal').textContent = v;
+}
+
+// ---------- buttons ----------
+// Routing matches the firmware's handleButtonMsg(): the volume keys are the
+// only thing reachable with the flip shut, and the OS decides what they mean.
+function pressButton(btn) {
+  if (btn === 'BTN_HANGUP') {
+    hardware.hangupHoldStart = Date.now();
+    hardware.hangupHoldTimer = setTimeout(() => {
+      hardware.hangupHoldTimer = null;
+      if (hardware.hangupHoldStart === 0) return;
+      hardware.hangupHoldStart = 0;
+      hardware.powered = !hardware.powered;
+      if (hardware.powered) {
+        hwLog('POWER ON');
+        hardware.innerBrightness = 100;
+        // A PIN-locked SIM is locked again on every power-up. That is the whole
+        // point of a SIM PIN, and it is why a normal phone asks at each boot.
+        simLockNow();
+        updateSimButtons();
+        osCB('onPowerOn');
+      } else {
+        hwLog('POWER OFF');
+        hardware.innerBrightness = 0; hardware.outerBrightness = 0;
+        hardware.callState = 'idle'; hardware.callNumber = '';
+        if (hardware.dialTimer) { clearTimeout(hardware.dialTimer); hardware.dialTimer = null; }
+        audio.stop();
+        display.clear(); outerDisplay.clear();
+        osCB('onPowerOff');
+      }
+    }, 3000);
+  }
+  hwLog('BTN ' + btn);
+  audio.ensure();                       // browsers need a gesture before audio
+
+  if (btn === 'VOL_UP' || btn === 'VOL_DOWN') { osCB('onVolumeButton', btn); return; }
+  if (!hardware.flipOpen) return;       // nothing else is reachable with the flip shut
+  osCB('onButtonPress', btn);
+}
+
+function releaseButton(btn) {
+  if (btn === 'BTN_HANGUP') {
+    const held = Date.now() - hardware.hangupHoldStart;
+    const wasDown = hardware.hangupHoldStart !== 0;
+    hardware.hangupHoldStart = 0;
+    if (hardware.hangupHoldTimer) { clearTimeout(hardware.hangupHoldTimer); hardware.hangupHoldTimer = null; }
+    if (wasDown && held < 3000 && hardware.flipOpen) osCB('onButtonPress', 'BTN_HANGUP');
+  }
+  osCB('onButtonRelease', btn);
+}
+
+function toggleFlip() {
+  hardware.flipOpen = !hardware.flipOpen;
+  document.getElementById('flipText').textContent = hardware.flipOpen ? 'Close Flip' : 'Open Flip';
+  hwLog('FLIP ' + (hardware.flipOpen ? 'OPEN' : 'CLOSED'));
+  osCB('onFlipChange', hardware.flipOpen);
+}
+
+// ---------- keyboard ----------
+const KEYMAP = {
+  Enter:'BTN_OK', ArrowUp:'ARROW_UP', ArrowDown:'ARROW_DOWN',
+  ArrowLeft:'ARROW_LEFT', ArrowRight:'ARROW_RIGHT', Tab:'BTN_LEFT',
+  Backspace:'BTN_RIGHT', Escape:'BTN_HANGUP', PageUp:'VOL_UP', PageDown:'VOL_DOWN',
+  '[':'BTN_LEFT', ']':'BTN_RIGHT', ';':'BTN_CALL', '+':'VOL_UP', '-':'VOL_DOWN',
+  '*':'NUM_STAR', '#':'NUM_HASH', '/':'NUM_HASH'
+};
+const heldKeys = {};
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'f' || e.key === 'F') { toggleFlip(); e.preventDefault(); return; }
+  if (e.key === 'p' || e.key === 'P') {
+    if (!heldKeys['P']) { heldKeys['P'] = true; pressButton('BTN_HANGUP'); }
+    e.preventDefault();
+    return;
+  }
+  let name = KEYMAP[e.key];
+  if (!name && e.key >= '0' && e.key <= '9') name = 'NUM_' + e.key;
+  if (name) {
+    if (!heldKeys[name]) { heldKeys[name] = true; pressButton(name); }
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'p' || e.key === 'P') { heldKeys['P'] = false; releaseButton('BTN_HANGUP'); return; }
+  let name = KEYMAP[e.key];
+  if (!name && e.key >= '0' && e.key <= '9') name = 'NUM_' + e.key;
+  if (name) { heldKeys[name] = false; releaseButton(name); }
+});
+
+// ---------- OS loading ----------
+function loadOSCode() {
+  const code = document.getElementById('codeEditor').value;
+  if (!code.trim()) { errLog('No OS code loaded. Press Load and pick pxp_os.js.'); return false; }
+  try {
+    window.printf = osLog;
+    window.hardwareAPI = {
+      getBatteryPercent: () => hardware.batteryPercent,
+      isFlipOpen: () => hardware.flipOpen,
+      getInnerBrightness: () => hardware.innerBrightness,
+      getOuterBrightness: () => hardware.outerBrightness,
+      setInnerBrightness, setOuterBrightness,
+      requestInnerFrame, requestOuterFrame,
+      modem, audio, storage, camera, sd: sdcard
+    };
+    (1, eval)(code);
+    hardware.osLoaded = true;
+    return true;
+  } catch (err) { errLog(err.message); return false; }
+}
+
+function restartOS() {
+  display.clear(); outerDisplay.clear();
+  if (hardware.hangupHoldTimer) { clearTimeout(hardware.hangupHoldTimer); hardware.hangupHoldTimer = null; }
+  if (hardware.dialTimer) { clearTimeout(hardware.dialTimer); hardware.dialTimer = null; }
+  audio.stop();
+  hardware.osLoaded = false; hardware.powered = false; hardware.flipOpen = true;
+  hardware.innerBrightness = 100; hardware.outerBrightness = 0;
+  hardware.callState = 'idle'; hardware.callNumber = '';
+  simDropNetwork();
+  hardware.simLocked = hardware.simIn && hardware.simPinEnabled;
+  hardware.pinAttempts = 3;
+  updateSimButtons();
+  document.getElementById('flipText').textContent = 'Close Flip';
+  hwLog('RESTART');
+  if (loadOSCode() && typeof window.osInit === 'function') window.osInit();
+}
+
+function saveCode() {
+  const blob = new Blob([document.getElementById('codeEditor').value], { type: 'text/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'pxp_os.js'; a.click();
+  URL.revokeObjectURL(a.href);
+  hwLog('Code saved');
+}
+
+function loadCode() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.js,.txt';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = ev => { document.getElementById('codeEditor').value = ev.target.result; hwLog('Loaded ' + file.name); };
+    r.readAsText(file);
+  };
+  input.click();
+}
+
+updateSimButtons();
+hwLog('Emulator ready. Load pxp_os.js, press Restart, then hold the red key for 3 seconds.');
+</script>
 </body>
 </html>
