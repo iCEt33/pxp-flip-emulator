@@ -836,7 +836,18 @@ function loadCode() {
 }
 
 updateSimButtons();
-hwLog('Emulator ready. Load pxp_os.js, press Restart, then hold the red key for 3 seconds.');
+
+// Load pxp_os.js from the same folder and boot automatically.
+fetch('pxp_os.js')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(code => {
+    document.getElementById('codeEditor').value = code;
+    restartOS();
+    hwLog('OS loaded. Hold the red key for 3 seconds to switch the phone on.');
+  })
+  .catch(() => {
+    hwLog('Emulator ready. Load pxp_os.js, press Restart, then hold the red key for 3 seconds.');
+  });
 </script>
 </body>
 </html>

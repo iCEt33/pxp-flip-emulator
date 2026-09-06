@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PxP Flip</title>
+<style>
+  :root {
+    --off:    #0a0a0a;   /* a screen with nothing on it */
+    --shell:  #141414;   /* the body of the phone */
+    --seam:   #262626;   /* where the two halves meet */
+    --lit:    #ffffff;   /* what the OS draws text in */
+    --dim:    #666666;   /* and what it draws secondary text in */
+    --glow:   #00ff00;   /* the phone's own green */
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: var(--off);
+    color: var(--dim);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    line-height: 1.6;
+  }
+
+  main {
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+  }
+
+  /* ---- the closed phone ---- */
+
+  .phone {
+    width: 168px;
+    height: 252px;
+    margin: 0 auto 40px;
+    background: var(--shell);
+    border-radius: 14px;
+    border: 1px solid var(--seam);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+    position: relative;
+  }
+
+  /* the hinge line across the top */
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 22px;
+    right: 22px;
+    height: 1px;
+    background: var(--seam);
+  }
+
+  #outer {
+    width: 104px;
+    height: 104px;
+    background: #000;
+    border-radius: 3px;
+    image-rendering: pixelated;
+    box-shadow: 0 0 0 1px var(--seam);
+  }
+
+  .wordmark {
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: #3a3a3a;
+    text-indent: 0.32em;
+  }
+
+  /* ---- words ---- */
+
+  .lede {
+    color: var(--lit);
+    font-size: 16px;
+    margin-bottom: 32px;
+  }
+
+  .lede span { display: block; color: var(--dim); }
+
+  /* ---- the one thing to do here ---- */
+
+  .open {
+    display: inline-block;
+    font: inherit;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    color: var(--glow);
+    background: transparent;
+    border: 1px solid #1e4d1e;
+    border-radius: 4px;
+    padding: 13px 38px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms linear, border-color 120ms linear;
+  }
+
+  .open:hover,
+  .open:focus-visible {
+    background: rgba(0, 255, 0, 0.07);
+    border-color: var(--glow);
+  }
+
+  .open:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
+
+  .notes {
+    margin-top: 30px;
+    font-size: 12.5px;
+    color: #4d4d4d;
+  }
+
+  .notes p + p { margin-top: 6px; }
+
+  @media (max-width: 400px) {
+    .phone { width: 148px; height: 222px; }
+    #outer { width: 92px; height: 92px; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="phone">
+    <canvas id="outer" width="128" height="128"></canvas>
+    <div class="wordmark">PXP FLIP</div>
+  </div>
+
+  <p class="lede">
+    The software for a flip phone that does not exist yet.
+    <span>The OS is finished. The phone is not.</span>
+  </p>
+
+  <a class="open" href="emulator.html">Open it</a>
+
+  <div class="notes">
+    <p>Runs in your browser. Nothing to install.</p>
+    <p>Hold the red key for 3 seconds to switch it on.</p>
+  </div>
+</main>
+
+<script>
+// The outer screen, drawn the way the phone draws it: 3x5 blocks of pixels,
+// one blank column between characters, on a 128x128 panel.
+const GLYPHS = {
+  '0': ['111','101','101','101','111'],
+  '1': ['010','110','010','010','111'],
+  '2': ['111','001','111','100','111'],
+  '3': ['111','001','111','001','111'],
+  '4': ['101','101','111','001','001'],
+  '5': ['111','100','111','001','111'],
+  '6': ['111','100','111','101','111'],
+  '7': ['111','001','001','001','001'],
+  '8': ['111','101','111','101','111'],
+  '9': ['111','101','111','001','111'],
+  ':': ['0','1','0','1','0'],
+  ' ': ['0','0','0','0','0'],
+  'M': ['10001','11011','10101','10001','10001'],
+  'O': ['111','101','101','101','111'],
+  'N': ['1001','1101','1011','1001','1001'],
+  'T': ['111','010','010','010','010'],
+  'U': ['101','101','101','101','111'],
+  'E': ['111','100','111','100','111'],
+  'W': ['10001','10001','10101','11011','10001'],
+  'D': ['110','101','101','101','110'],
+  'H': ['101','101','111','101','101'],
+  'F': ['111','100','111','100','100'],
+  'R': ['110','101','110','101','101'],
+  'I': ['111','010','010','010','111'],
+  'S': ['111','100','111','001','111'],
+  'A': ['111','101','111','101','101']
+};
+
+const cv = document.getElementById('outer');
+const cx = cv.getContext('2d');
+
+function textWidth(str, px) {
+  let w = 0;
+  for (const ch of str) {
+    const g = GLYPHS[ch];
+    if (!g) continue;
+    w += (g[0].length + 1) * px;
+  }
+  return w - px; // no trailing gap
+}
+
+function drawText(str, x, y, px, colour) {
+  cx.fillStyle = colour;
+  for (const ch of str) {
+    const g = GLYPHS[ch];
+    if (!g) continue;
+    for (let row = 0; row < g.length; row++) {
+      for (let col = 0; col < g[row].length; col++) {
+        if (g[row][col] === '1') {
+          cx.fillRect(x + col * px, y + row * px, px, px);
+        }
+      }
+    }
+    x += (g[0].length + 1) * px;
+  }
+}
+
+const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+function paint() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const time = hh + ':' + mm;
+  const date = DAYS[now.getDay()] + ' ' + now.getDate();
+
+  cx.fillStyle = '#000';
+  cx.fillRect(0, 0, 128, 128);
+
+  const timePx = 6;
+  drawText(time, Math.round((128 - textWidth(time, timePx)) / 2), 44, timePx, '#ffffff');
+
+  const datePx = 3;
+  drawText(date, Math.round((128 - textWidth(date, datePx)) / 2), 78, datePx, '#666666');
+}
+
+paint();
+setInterval(paint, 10000);
+</script>
+
+</body>
+</html>
