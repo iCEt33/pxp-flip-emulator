@@ -1,8 +1,9 @@
-# PxP Flip — OS Emulator
+# PxP Flip OS Emulator
 
 A browser emulator for the PxP Flip, a small 4G flip phone with no browser and
-no app store. It runs the real OS against a simulated hardware layer, so the
-whole phone can be built and used before any of it physically exists.
+no app store. It runs the real OS, **PIXL OS**, against a simulated hardware
+layer, so the whole phone can be built and used before any of it physically
+exists.
 
 No install, no build step, no dependencies.
 
@@ -18,7 +19,7 @@ Then hold the red hangup key for 3 seconds to switch the phone on.
 |---|---|
 | `index.html` | Landing page |
 | `emulator.html` | The hardware emulator — screens, keys, battery, hinge, modem, SD |
-| `pxp_os.js` | The operating system — every app, all drawing, all state |
+| `pxp_os.js` | PIXL OS, the operating system — every app, all drawing, all state |
 
 The split is deliberate. `emulator.html` pretends to be the physical device and
 holds no application logic. `pxp_os.js` is a port of the firmware that runs on
@@ -65,8 +66,13 @@ settings · screen dim, sleep and outer-screen fade · Apps and Games submenus
 
 **Coming soon, on the phone as well as here**
 
-Calendar · notes · calculator · alarms · file explorer · music · wallet ·
-Snake, Tetris, Blackjack, Starfall and Doom
+Calendar · notes · calculator · alarms · file explorer · music · wallet (in the
+v2 prototype) · Pong, Snake, Tetris, Blackjack, Starfall and a Wolfenstein-style
+raycaster
+
+**Note:** the firmware on the real phone is currently ahead of this emulator
+(themes, contact details, settings and more since September 13). The emulator
+catches up once every app exists, so nothing gets ported twice.
 
 ---
 
@@ -108,10 +114,12 @@ blocks with a one-block gap, so spacing scales with size automatically.
 ## The phone this is for
 
 - ESP32-S3-WROOM-1, 16 MB flash, 8 MB octal PSRAM
-- 2.4" TFT LCD, 320×240, ILI9341, inside
+- 2.4" TFT LCD, 240×320 portrait, ILI9341, inside
 - 1.5" OLED, 128×128, SSD1351, outside
-- A7670 4G modem — calls and SMS only, no data
-- DVP camera on a flat flex
+- 4G modem, calls and SMS only, no data. The breadboard uses a SIMCom A7670;
+  the final model is not locked yet
+- DVP camera on a flat flex (an OV2640 on the breadboard; the finished phone
+  targets an OV5640 with autofocus, so it can read QR codes up close)
 - microSD, removable battery, backlit keypad, USB-C, 3.5 mm jack
 
 The OS runs on a breadboard today and makes real 4G calls with a real SIM. What
@@ -119,9 +127,11 @@ does not exist yet is a PCB, a hinge or a shell.
 
 **Known missing on real hardware**
 
-- **Call audio, both directions.** The modem breakout does not bring out its PCM
-  pins, so calls connect, ring and time correctly in complete silence
+- **Call audio, both directions.** Calls connect, ring and time correctly, but
+  nothing is wired to the modem's audio yet. The modem has its own built-in
+  audio codec, so the fix is simple: an electret mic and a small speaker on its
+  analog pads
 - Battery percentage is hardcoded to 100. No divider, no gauge, no charger
-- No real-time clock. Time comes from NTP over WiFi, so with no WiFi the phone
-  does not know what time it is
+- No real-time clock chip. Network time from the 4G modem (NITZ) is switched on
+  but not yet confirmed working; until then, time comes from NTP over WiFi
 - No vibration motor, and no headphone jack circuit
