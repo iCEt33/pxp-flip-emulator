@@ -5,186 +5,461 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PxP Flip Phone Emulator</title>
 <style>
+  /* ==========================================================================
+     PxP Flip emulator, dressed like pixlnauts.com
+     Same palette, type and hard pixel edges as the website (App.js): black,
+     #0f0 green, monospace, square corners, [BRACKET] text buttons and >>>
+     headings. The phone body uses the greys of the site's JOIN WAITLIST
+     flip-phone button. Its keypad lights up green while the phone is on.
+     ========================================================================== */
+  :root {
+    --g:#0f0; --g-hi:#5f5; --g-dk:#086; --glow:rgba(0,255,0,.5);
+    --y:#ff5; --r:#f55;
+    --panel:#111; --line:#333; --edge:#555; --dim:#777;
+    --body:#3a3a3a; --body-hi:#555; --body-lo:#2a2a2a; --depth:#1a1a1a;
+    --key:#4a4a4a; --key-hi:#626262; --key-lo:#2b2b2b;
+    /* pixel-stepped corners, the same trick the site uses for its pixel moon */
+    --px4:polygon(0 4px,2px 4px,2px 2px,4px 2px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 2px,calc(100% - 2px) 2px,calc(100% - 2px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 2px) calc(100% - 4px),calc(100% - 2px) calc(100% - 2px),calc(100% - 4px) calc(100% - 2px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 2px),2px calc(100% - 2px),2px calc(100% - 4px),0 calc(100% - 4px));
+    --px8:polygon(0 8px,4px 8px,4px 4px,8px 4px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px));
+    --px16:polygon(0 16px,4px 16px,4px 8px,8px 8px,8px 4px,16px 4px,16px 0,calc(100% - 16px) 0,calc(100% - 16px) 4px,calc(100% - 8px) 4px,calc(100% - 8px) 8px,calc(100% - 4px) 8px,calc(100% - 4px) 16px,100% 16px,100% calc(100% - 16px),calc(100% - 4px) calc(100% - 16px),calc(100% - 4px) calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) calc(100% - 4px),calc(100% - 16px) calc(100% - 4px),calc(100% - 16px) 100%,16px 100%,16px calc(100% - 4px),8px calc(100% - 4px),8px calc(100% - 8px),4px calc(100% - 8px),4px calc(100% - 16px),0 calc(100% - 16px));
+    --px32:polygon(0 32px,8px 32px,8px 16px,16px 16px,16px 8px,32px 8px,32px 0,calc(100% - 32px) 0,calc(100% - 32px) 8px,calc(100% - 16px) 8px,calc(100% - 16px) 16px,calc(100% - 8px) 16px,calc(100% - 8px) 32px,100% 32px,100% calc(100% - 32px),calc(100% - 8px) calc(100% - 32px),calc(100% - 8px) calc(100% - 16px),calc(100% - 16px) calc(100% - 16px),calc(100% - 16px) calc(100% - 8px),calc(100% - 32px) calc(100% - 8px),calc(100% - 32px) 100%,32px 100%,32px calc(100% - 8px),16px calc(100% - 8px),16px calc(100% - 16px),8px calc(100% - 16px),8px calc(100% - 32px),0 calc(100% - 32px));
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Courier New',monospace; background:#0a0a0a; color:#0f0; height:100vh; overflow:hidden; }
-  .container { display:flex; height:100vh; }
+  html { scrollbar-color:#444 #000; }
+  body {
+    font-family:'PixelFont',monospace; background:#000; color:var(--g); line-height:1.4;
+    height:100vh; height:100dvh; overflow:hidden;
+    -webkit-font-smoothing:none; font-smooth:never;
+  }
+  ::selection { background:var(--g); color:#000; }
+  button {
+    font:inherit; color:inherit; background:none; border:0; cursor:pointer;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  }
+  button:focus-visible, input:focus-visible { outline:3px dashed var(--y); outline-offset:3px; }
+  .prompt { color:var(--g); font-weight:bold; }
+
+  .container { display:flex; height:100vh; height:100dvh; }
 
   /* ---- left: the code, and the world the phone lives in ---- */
-  .editor-panel { flex:1 1 auto; min-width:320px; display:flex; flex-direction:column; border-right:2px solid #333; }
-  .editor-header { background:#1a1a1a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #333; gap:10px; }
-  .editor-title { color:#0f0; font-weight:bold; font-size:15px; white-space:nowrap; }
-  .button-group { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
-  button { padding:7px 12px; border:none; border-radius:4px; cursor:pointer; font-family:inherit; font-size:12px; font-weight:bold; transition:background .15s; }
-  .btn-save{background:#2563eb;color:#fff} .btn-save:hover{background:#1d4ed8}
-  .btn-load{background:#7c3aed;color:#fff} .btn-load:hover{background:#6d28d9}
-  .btn-run{background:#16a34a;color:#fff}  .btn-run:hover{background:#15803d}
-  .btn-charge{background:#eab308;color:#000} .btn-charge:hover{background:#ca8a04}
-  #codeEditor { flex:1 1 auto; min-height:80px; background:#0d1117; color:#0f0; padding:14px; font-size:12px; line-height:1.5; resize:none; border:none; outline:none; font-family:'Courier New',monospace; tab-size:4; }
+  .editor-panel {
+    flex:1 1 auto; min-width:340px; min-height:0;
+    display:flex; flex-direction:column; gap:12px;
+    padding:0 14px 14px; border-right:4px solid var(--edge);
+  }
+  .editor-header {
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:14px 0 12px; border-bottom:4px solid var(--g);
+  }
+  .editor-title { font-size:20px; font-weight:bold; letter-spacing:2px; white-space:nowrap; text-shadow:0 0 5px var(--glow); }
+  .title-sub { margin-left:10px; color:var(--dim); font-size:12px; font-weight:normal; letter-spacing:1px; text-shadow:none; }
+  .button-group { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+
+  /* [TEXT] buttons, like the site's [MAX] and [VIEW DONATION HISTORY] */
+  .btn-text {
+    padding:5px 8px; border:2px solid var(--g); color:var(--g);
+    font-size:12px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; white-space:nowrap;
+    transition:background-color .12s steps(2,end), color .12s steps(2,end), box-shadow .12s steps(2,end);
+  }
+  .btn-text::before { content:'['; }
+  .btn-text::after  { content:']'; }
+  .btn-text.solid { background:var(--g); color:#000; }
+  @media (hover:hover) {
+    .btn-text:hover { background:rgba(0,255,0,.1); box-shadow:0 0 10px rgba(0,255,0,.4); }
+    .btn-text.solid:hover { background:var(--g-hi); }
+  }
+  .btn-text:active { background:var(--g); color:#000; }
+
+  /* toggles: lit green = on, grey = off, dashed yellow = needs attention */
+  .btn-hw { border-color:var(--edge); color:#888; }
+  .btn-hw.on { background:var(--g); border-color:var(--g); color:#000; }
+  .btn-hw.warn { background:none; border:2px dashed var(--y); color:var(--y); }
+  #chargeBtn.on { background:var(--y); border-color:var(--y); color:#000; }
+  @media (hover:hover) {
+    .btn-hw.on:hover { background:var(--g-hi); }
+    .btn-hw.warn:hover { background:rgba(255,255,85,.1); box-shadow:0 0 10px rgba(255,255,85,.35); }
+    #chargeBtn.on:hover { background:#ff8; }
+  }
+
+  /* the site's green pixel button, with a depth block it sinks into */
+  .btn-pixel {
+    padding:8px 18px 12px 14px; color:#000;
+    font-size:14px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; white-space:nowrap;
+    background:
+      linear-gradient(var(--g),var(--g)) 0 0 / calc(100% - 4px) calc(100% - 4px) no-repeat,
+      linear-gradient(var(--g-dk),var(--g-dk)) 4px 4px / calc(100% - 4px) calc(100% - 4px) no-repeat;
+    transition:padding .12s steps(2,end), background-position .12s steps(2,end);
+  }
+  @media (hover:hover) {
+    .btn-pixel:hover { padding:10px 16px 10px 16px; background-position:2px 2px, 4px 4px; }
+  }
+  .btn-pixel:active { padding:12px 14px 8px 18px; background-position:4px 4px, 4px 4px; }
+
+  /* panels: grey frame, green while you are working inside it, like an open tab on the site */
+  .panel { display:flex; flex-direction:column; min-height:0; background:var(--panel); border:4px solid var(--edge); }
+  .panel:focus-within { border-color:var(--g); }
+  .panel-head {
+    flex:none; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    padding:8px 12px; border-bottom:2px solid var(--line);
+    font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; text-shadow:0 0 5px var(--glow);
+  }
+  .panel-note { color:var(--dim); font-size:11px; font-weight:normal; letter-spacing:0; text-transform:none; text-shadow:none; }
+
+  .code-panel { flex:1 1 auto; }
+  #codeEditor {
+    flex:1 1 auto; width:100%; min-height:80px; resize:none; border:0; outline:0;
+    background:#000; color:var(--g); caret-color:var(--g-hi);
+    padding:12px 14px; font:12px/1.55 'PixelFont',monospace; tab-size:4;
+  }
+  #codeEditor::placeholder { color:#555; }
 
   /* ---- the hardware panel: things a real phone gets from the world ---- */
-  .hw-panel { background:#141414; border-top:2px solid #333; padding:9px 14px; font-size:11px; flex:0 0 auto; }
-  .hw-title { color:#666; text-transform:uppercase; letter-spacing:1px; margin-bottom:7px; }
-  .hw-row { display:flex; gap:7px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
-  .hw-row label { color:#7a7a7a; }
-  .hw-panel input[type=text] { background:#0d1117; border:1px solid #333; color:#0f0; padding:5px 7px; border-radius:3px; font-family:inherit; font-size:11px; }
-  .hw-panel input[type=range] { width:100px; }
-  .btn-hw { background:#333; color:#ccc; padding:5px 9px; font-size:11px; }
-  .btn-hw:hover { background:#444; }
-  .btn-hw.on { background:#16a34a; color:#fff; }
-  .btn-hw.warn { background:#b45309; color:#fff; }
-  .btn-ring { background:#16a34a; color:#fff; }
-  .btn-sms  { background:#2563eb; color:#fff; }
+  .hw-panel { flex:none; }
+  .hw-body { padding:10px 12px 2px; font-size:12px; }
+  .hw-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  .hw-row label { font-weight:bold; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; }
+  .hw-panel input[type=text] {
+    min-width:0; padding:5px 7px; border:2px solid var(--g);
+    background:#000; color:var(--g); font:12px 'PixelFont',monospace;
+  }
+  .hw-panel input[type=text]:focus { outline:none; border-color:var(--g-hi); box-shadow:0 0 5px var(--glow); }
+  .hw-signal { display:inline-flex; align-items:center; gap:8px; margin-left:4px; }
+  #hwSignalVal { min-width:2ch; color:#fff; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:110px; height:16px; background:transparent; cursor:pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height:6px; background:#000; border:2px solid var(--g); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:16px; margin-top:-7px; border:0; border-radius:0; background:var(--g); }
+  input[type=range]::-moz-range-track { height:6px; background:#000; border:2px solid var(--g); }
+  input[type=range]::-moz-range-thumb { width:10px; height:16px; border:0; border-radius:0; background:var(--g); }
 
-  .console { flex:0 0 auto; height:132px; background:#000; border-top:2px solid #333; padding:8px; overflow-y:auto; font-size:11px; }
-  .hw-log{color:#60a5fa} .os-log{color:#0f0} .err-log{color:#f66}
+  /* ---- console: the site's boot terminal ---- */
+  .log-panel { flex:none; }
+  .console {
+    height:150px; overflow-y:auto; padding:0 12px 8px;
+    background:#000; font-size:11px; line-height:1.5; overflow-wrap:anywhere;
+  }
+  .console-head {
+    position:sticky; top:0; z-index:1;
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+    margin:0 -12px 6px; padding:8px 12px; background:var(--panel); border-bottom:2px solid var(--line);
+    font-size:13px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; text-shadow:0 0 5px var(--glow);
+  }
+  .legend { margin-left:auto; color:var(--dim); font-size:11px; font-weight:normal; letter-spacing:0; text-transform:none; text-shadow:none; }
+  .legend b { margin-left:8px; }
+  .hw-log  { color:var(--y); }
+  .os-log  { color:var(--g); text-shadow:0 0 5px rgba(0,255,0,.45); }
+  .err-log { color:var(--r); }
 
   /* ---- right: the phone itself ----
-     Fixed width, because the device is a fixed size and squeezing it is what
-     pushed the outer screen off the edge before. It scrolls rather than clips,
-     and scales down on short windows so a laptop still sees the whole phone. */
+     Sized to the device, because the device is a fixed size and squeezing it
+     is what pushed the outer screen off the edge before. It scrolls rather
+     than clips, and shrinks on short windows so a laptop sees the whole phone. */
   .phone-panel {
-    flex:0 0 600px; width:600px;
-    display:flex; align-items:flex-start; justify-content:center;
-    background:#1a1a1a; padding:16px 12px; overflow:auto;
+    flex:0 0 auto; display:flex; overflow:auto; padding:24px 22px;
+    background:
+      radial-gradient(closest-side, rgba(0,255,0,.07), rgba(0,255,0,0)) 50% 45% / 100% 100% no-repeat,
+      radial-gradient(circle, rgba(0,255,0,.13) 1px, rgba(0,255,0,0) 1.5px) 0 0 / 16px 16px,
+      #000;
+    /* a phone is not a document: no selecting key labels, no long-press menu, no double-tap zoom */
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation;
   }
-  .phone-stage { display:flex; gap:16px; align-items:flex-start; transform-origin:top center; }
-  @media (max-height: 900px) { .phone-stage { transform:scale(.90); } }
-  @media (max-height: 810px) { .phone-stage { transform:scale(.80); } }
-  @media (max-height: 720px) { .phone-stage { transform:scale(.70); } }
+  .phone-stage { display:flex; gap:16px; align-items:flex-start; margin:auto; }
 
-  .volume-controls { display:flex; flex-direction:column; gap:12px; padding-top:120px; }
-  .btn-volume { background:#444; width:44px; height:44px; border-radius:50%; color:#fff; font-size:19px; }
-  .btn-volume:hover{background:#555}
+  /* volume rocker on the side of the phone */
+  .volume-controls { display:flex; flex-direction:column; gap:2px; margin-top:150px; filter:drop-shadow(4px 4px 0 var(--depth)); }
+  .side-key {
+    width:36px; height:46px; background:var(--body-lo); color:#c8c8c8; font-size:20px; font-weight:bold; line-height:1;
+    clip-path:var(--px4); box-shadow:inset 2px 2px 0 #444, inset 0 -2px 0 #1e1e1e; touch-action:none;
+  }
+  .side-key.is-down { background:#222; color:var(--g); box-shadow:inset 0 2px 0 #1a1a1a; }
 
-  .phone-device { background:#2a2a2a; border-radius:26px; padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.5); }
-  .screen { border:4px solid #444; border-radius:8px; overflow:hidden; }
-  .inner-screen { width:240px; height:320px; background:#000; margin-bottom:12px; }
-  .controls { display:flex; flex-direction:column; gap:8px; }
-  .control-row { display:grid; grid-template-columns:64px 1fr 64px; gap:6px; align-items:center; }
-  .control-row-center { display:flex; justify-content:center; align-items:center; gap:8px; }
-  .btn-phone { background:#444; padding:10px 14px; border-radius:6px; color:#fff; font-size:11px; }
-  .btn-phone:hover{background:#555} .btn-phone:active{transform:scale(.95)}
-  .btn-arrow{padding:7px 10px}
-  .btn-ok{background:#16a34a;border-radius:50%;padding:11px 13px}
-  .btn-call{background:#16a34a;border-radius:50%;padding:8px}
-  .btn-hangup{background:#dc2626;border-radius:50%;padding:8px}
-  .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:6px; }
-  .btn-num { background:#333; padding:9px; font-size:15px; }
+  /* the open clamshell: lid on top, hinge, keypad half */
+  .phone-device {
+    width:288px; display:flex; flex-direction:column; align-items:center;
+    filter:drop-shadow(5px 5px 0 var(--depth)); transition:opacity .2s steps(3,end);
+  }
+  .phone-half {
+    position:relative; width:100%; background:var(--body); clip-path:var(--px16);
+    box-shadow:inset 0 0 0 2px var(--body-hi), inset 0 0 0 4px var(--body-lo);
+  }
+  .phone-top { padding:14px 18px 18px; }
+  .earpiece { display:block; width:48px; height:4px; margin:0 auto 10px; background:repeating-linear-gradient(90deg, #151515 0 4px, transparent 4px 6px); }
+  .phone-hinge {
+    width:calc(100% - 28px); height:16px; display:flex; justify-content:space-between;
+    background:var(--body-lo); box-shadow:inset 0 2px 0 #444, inset 0 -2px 0 var(--depth);
+  }
+  .phone-hinge span { width:56px; background:#474747; box-shadow:inset 0 2px 0 #5c5c5c, inset 0 -2px 0 #2e2e2e; }
+  .phone-bottom { padding:16px 14px 12px; }
+  .mic { display:block; width:6px; height:4px; margin:12px auto 0; background:#151515; }
 
-  .side-controls { display:flex; flex-direction:column; gap:12px; padding-top:120px; align-items:center; }
-  .outer-screen-container { display:flex; flex-direction:column; align-items:center; gap:6px; }
-  .outer-screen { width:128px; height:128px; background:#000; border:4px solid #444; border-radius:8px; }
-  .flip-btn { padding:10px 16px; background:#7c3aed; color:#fff; border-radius:8px; }
-  .flip-btn:hover{background:#6d28d9}
-  .outer-label { color:#666; font-size:10px; text-transform:uppercase; letter-spacing:1px; }
-  .battery-info { color:#666; font-size:10px; text-align:center; }
-  .keyhint { color:#555; font-size:10px; text-align:center; line-height:1.6; max-width:140px; }
+  /* screens: exactly 240x320 and 128x128 inside the bezel, so every OS pixel lands on a screen pixel */
+  .screen { box-sizing:content-box; overflow:hidden; background:#000; border:4px solid #0b0b0b; box-shadow:0 0 0 2px var(--body-hi); }
+  .inner-screen { width:240px; height:320px; margin:0 auto; }
+  .outer-screen { width:128px; height:128px; }
+
+  /* soft keys and call/end around the d-pad, the classic flip-phone layout */
+  .controls {
+    display:grid; grid-template-columns:1fr 116px 1fr; grid-template-rows:1fr 1fr;
+    grid-template-areas:"sl dpad sr" "call dpad end"; column-gap:8px; height:116px;
+  }
+  .soft-left { grid-area:sl; } .soft-right { grid-area:sr; }
+  .call-key { grid-area:call; } .end-key { grid-area:end; }
+
+  .key {
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    background:var(--key); color:#a8a8a8; clip-path:var(--px4);
+    box-shadow:inset 0 2px 0 var(--key-hi), inset 0 -3px 0 var(--key-lo);
+    touch-action:none; transition:background-color .1s steps(2,end);
+  }
+  .key.is-down { background:#3d3d3d; box-shadow:inset 0 3px 0 var(--key-lo), inset 0 -1px 0 var(--key-hi); }
+  .key.is-down > * { transform:translateY(1px); }
+
+  .soft-key { align-self:start; height:30px; }
+  .soft-key::before { content:''; width:22px; height:4px; background:#8a8a8a; }
+  .call-key, .end-key { align-self:end; height:40px; font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; }
+  .call-key { color:var(--g); }
+  .end-key  { color:var(--r); }
+  .ico { width:14px; height:14px; flex:none; fill:currentColor; shape-rendering:crispEdges; pointer-events:none; }
+
+  .dpad {
+    grid-area:dpad; display:grid; padding:4px;
+    grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    grid-template-areas:". up ." "left ok right" ". down .";
+    background:var(--body-lo); clip-path:var(--px32);
+    box-shadow:inset 0 2px 0 #444, inset 0 -2px 0 var(--depth);
+  }
+  .dpad-up { grid-area:up; } .dpad-down { grid-area:down; }
+  .dpad-left { grid-area:left; } .dpad-right { grid-area:right; } .dpad-ok { grid-area:ok; }
+  .dpad-key { display:flex; align-items:center; justify-content:center; touch-action:none; }
+  .dpad-key::before {   /* a stepped pixel arrow */
+    content:''; width:14px; height:8px; background:#8a8a8a;
+    clip-path:polygon(6px 0,8px 0,8px 2px,10px 2px,10px 4px,12px 4px,12px 6px,14px 6px,14px 8px,0 8px,0 6px,2px 6px,2px 4px,4px 4px,4px 2px,6px 2px);
+  }
+  .dpad-down::before  { transform:rotate(180deg); }
+  .dpad-left::before  { transform:rotate(-90deg); }
+  .dpad-right::before { transform:rotate(90deg); }
+  .dpad-key.is-down { background:rgba(255,255,255,.07); }
+  .dpad-key.is-down::before { background:var(--g); }
+  .dpad-ok {
+    display:flex; align-items:center; justify-content:center;
+    background:var(--key); color:#8a8a8a; font-size:11px; font-weight:bold; letter-spacing:1px;
+    clip-path:var(--px4); box-shadow:inset 0 2px 0 var(--key-hi), inset 0 -3px 0 var(--key-lo); touch-action:none;
+  }
+  .dpad-ok.is-down { background:#3d3d3d; box-shadow:inset 0 3px 0 var(--key-lo); }
+
+  .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px 10px; margin-top:14px; }
+  .num-key { flex-direction:column; gap:1px; height:42px; font-size:17px; font-weight:bold; line-height:1; }
+  .num-key small { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#7c7c7c; }
+
+  /* keypad backlight: on while the phone is on, in PIXLNAUTS green */
+  body.powered .num-key { color:var(--g); text-shadow:0 0 6px var(--glow); }
+  body.powered .num-key small { color:var(--g-hi); text-shadow:none; }
+  body.powered .soft-key::before, body.powered .dpad-key::before { background:var(--g); }
+  body.powered .dpad-key.is-down::before { background:#cfc; }
+  body.powered .dpad-ok { color:var(--g); text-shadow:0 0 6px var(--glow); }
+
+  /* flip shut: the open phone dims, the outer screen is the one that counts */
+  body.flip-closed .phone-device { opacity:.32; }
+
+  /* ---- outside of the lid, flip switch, battery, key hints ---- */
+  .side-controls { width:172px; display:flex; flex-direction:column; gap:14px; margin-top:24px; }
+  .outer-screen-container { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .outer-label { color:var(--dim); font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; }
+  body.flip-closed .outer-label { color:var(--g); text-shadow:0 0 5px var(--glow); }
+  .lid { filter:drop-shadow(5px 5px 0 var(--depth)); }
+  .lid-face {
+    position:relative; padding:20px 16px 16px; background:var(--body); clip-path:var(--px8);
+    box-shadow:inset 0 0 0 2px var(--body-hi), inset 0 0 0 4px var(--body-lo);
+  }
+  .lens { position:absolute; top:7px; right:12px; width:8px; height:8px; background:#0b0b0b; box-shadow:0 0 0 2px #5a5a5a; }
+  .flip-btn { align-self:stretch; }
+
+  .battery-info { display:flex; align-items:center; justify-content:center; gap:10px; color:#888; font-size:11px; }
+  .battery-info::before {   /* pixel battery, filled by --batt (set by updateBattery) */
+    content:''; flex:none; box-sizing:content-box; width:18px; height:6px; padding:1px;
+    border:2px solid #888; box-shadow:6px 0 0 -4px #888;
+    background:linear-gradient(90deg, var(--g) calc(var(--batt,100) * 1%), transparent 0) content-box;
+  }
+  .battery-info.charging::before { background-image:linear-gradient(90deg, var(--y) calc(var(--batt,100) * 1%), transparent 0); }
+  .battery-info.low::before { background-image:linear-gradient(90deg, var(--r) calc(var(--batt,100) * 1%), transparent 0); }
+
+  .keyhint { padding-top:12px; border-top:2px solid var(--line); font-size:10px; color:#666; }
+  .kh-title { margin-bottom:6px; color:var(--dim); font-weight:bold; letter-spacing:1px; text-transform:uppercase; }
+  .keyhint dl { display:grid; grid-template-columns:auto 1fr; gap:3px 10px; }
+  .keyhint dt { color:var(--g); font-weight:bold; white-space:nowrap; }
+  .touchhint { display:none; color:#888; font-size:11px; line-height:1.5; }
+  /* phones and tablets have no keyboard: swap the shortcut list for the one thing worth knowing */
+  @media (hover:none) and (pointer:coarse) {
+    .keyhint { display:none; }
+    .touchhint { display:block; }
+  }
+
+  /* short laptop screens: shrink the phone so all of it fits */
+  @media (min-width:961px) and (max-height:860px) { .phone-stage { zoom:.9; } }
+  @media (min-width:961px) and (max-height:780px) { .phone-stage { zoom:.8; } }
+  @media (min-width:961px) and (max-height:690px) { .phone-stage { zoom:.7; } }
+
+  /* ---- narrow screens: one column you scroll, phone first ---- */
+  @media (max-width:960px) {
+    body { height:auto; overflow:visible; }
+    .container { flex-direction:column; height:auto; }
+    .editor-panel { display:contents; }
+    .editor-header { order:1; margin:0 12px; }
+    .button-group { justify-content:flex-start; }
+    .phone-panel { order:2; flex:none; overflow:visible; padding:22px 8px 30px; border-bottom:4px solid var(--edge); }
+    .hw-panel   { order:3; margin:14px 12px 0; }
+    .log-panel  { order:4; margin:14px 12px 0; }
+    .code-panel { order:5; margin:14px 12px; height:70vh; height:70dvh; }
+    .console { height:200px; }
+    .phone-stage { flex-wrap:wrap; justify-content:center; gap:12px; }
+    .volume-controls { margin-top:140px; }
+    .side-controls {
+      flex:1 0 100%; width:auto; margin-top:14px;
+      display:grid; grid-template-columns:auto minmax(0,180px);
+      grid-template-areas:"lid flip" "lid batt" "lid hint";
+      justify-content:center; align-items:center; column-gap:20px; row-gap:10px;
+    }
+    .outer-screen-container { grid-area:lid; }
+    .flip-btn { grid-area:flip; align-self:end; }
+    .battery-info { grid-area:batt; justify-content:flex-start; }
+    .touchhint, .keyhint { grid-area:hint; align-self:start; }
+  }
+  @media (max-width:380px) { .phone-stage { zoom:.9; } }
+  @media (max-width:340px) { .phone-stage { zoom:.82; } }
+
+  /* iPhones zoom the page into any text box under 16px; keep them at 16px there */
+  @supports (-webkit-touch-callout:none) {
+    #codeEditor, .hw-panel input[type=text] { font-size:16px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after { transition:none !important; }
+  }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="editor-panel">
-    <div class="editor-header">
-      <div class="editor-title">PxP Flip OS</div>
+    <header class="editor-header">
+      <div class="editor-title"><span class="prompt">&gt;&gt;&gt;</span> PXP FLIP OS<span class="title-sub">emulator</span></div>
       <div class="button-group">
-        <button class="btn-charge" onclick="toggleCharger()">Charge</button>
-        <button class="btn-save" onclick="saveCode()">Save</button>
-        <button class="btn-load" onclick="loadCode()">Load</button>
-        <button class="btn-run" onclick="restartOS()">Restart</button>
+        <button class="btn-text" id="chargeBtn" onclick="toggleCharger()">Charge</button>
+        <button class="btn-text" onclick="saveCode()">Save</button>
+        <button class="btn-text" onclick="loadCode()">Load</button>
+        <button class="btn-pixel" onclick="restartOS()">Restart</button>
       </div>
-    </div>
-    <textarea id="codeEditor" spellcheck="false" placeholder="Load pxp_os.js, then press Restart."></textarea>
+    </header>
 
-    <div class="hw-panel">
-      <div class="hw-title">Hardware simulation &mdash; things a real phone gets from the world</div>
-      <div class="hw-row">
-        <label>Call from</label>
-        <input type="text" id="hwCaller" value="+36701234567" size="14">
-        <button class="btn-hw btn-ring" onclick="simIncomingCall()">Ring</button>
-        <button class="btn-hw" onclick="simRemoteAnswer()">They pick up</button>
-        <button class="btn-hw" onclick="simRemoteHangup()">Far end hangs up</button>
-      </div>
-      <div class="hw-row">
-        <label>Text from</label>
-        <input type="text" id="hwSmsFrom" value="+36701234567" size="14">
-        <input type="text" id="hwSmsBody" value="are you still up?" size="24">
-        <button class="btn-hw btn-sms" onclick="simIncomingSMS()">Send</button>
-      </div>
-      <div class="hw-row">
-        <button class="btn-hw on" id="hwSimBtn" onclick="toggleSim()">SIM in</button>
-        <button class="btn-hw on" id="hwPinBtn" onclick="toggleSimPin()">PIN 1234</button>
-        <button class="btn-hw on" id="hwRegBtn" onclick="toggleReg()">Registered</button>
-        <button class="btn-hw on" id="hwSdBtn"  onclick="toggleSd()">SD card in</button>
-        <label>Signal</label>
-        <input type="range" id="hwSignal" min="0" max="31" value="24" oninput="setSignal(this.value)">
-        <span id="hwSignalVal" style="color:#7a7a7a">24</span>
-      </div>
-    </div>
+    <section class="panel code-panel">
+      <div class="panel-head"><span><span class="prompt">&gt;&gt;&gt;</span> OS code</span><span class="panel-note">pxp_os.js</span></div>
+      <textarea id="codeEditor" spellcheck="false" placeholder="Load pxp_os.js, then press Restart."></textarea>
+    </section>
 
-    <div class="console" id="console">
-      <div style="color:#666;margin-bottom:4px;">Console &mdash; blue = hardware, green = OS, red = error</div>
-    </div>
+    <section class="panel hw-panel">
+      <div class="panel-head"><span><span class="prompt">&gt;&gt;&gt;</span> Hardware</span><span class="panel-note">things a real phone gets from the world</span></div>
+      <div class="hw-body">
+        <div class="hw-row">
+          <label for="hwCaller">Call from:</label>
+          <input type="text" id="hwCaller" value="+36701234567" size="14">
+          <button class="btn-text solid" onclick="simIncomingCall()">Ring</button>
+          <button class="btn-text" onclick="simRemoteAnswer()">They pick up</button>
+          <button class="btn-text" onclick="simRemoteHangup()">Far end hangs up</button>
+        </div>
+        <div class="hw-row">
+          <label for="hwSmsFrom">Text from:</label>
+          <input type="text" id="hwSmsFrom" value="+36701234567" size="14">
+          <input type="text" id="hwSmsBody" value="are you still up?" size="24" aria-label="Message text">
+          <button class="btn-text solid" onclick="simIncomingSMS()">Send</button>
+        </div>
+        <div class="hw-row">
+          <button class="btn-text btn-hw on" id="hwSimBtn" onclick="toggleSim()">SIM in</button>
+          <button class="btn-text btn-hw on" id="hwPinBtn" onclick="toggleSimPin()">PIN 1234</button>
+          <button class="btn-text btn-hw on" id="hwRegBtn" onclick="toggleReg()">Registered</button>
+          <button class="btn-text btn-hw on" id="hwSdBtn"  onclick="toggleSd()">SD card in</button>
+          <span class="hw-signal">
+            <label for="hwSignal">Signal:</label>
+            <input type="range" id="hwSignal" min="0" max="31" value="24" oninput="setSignal(this.value)">
+            <span id="hwSignalVal">24</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel log-panel">
+      <div class="console" id="console">
+        <div class="console-head"><span><span class="prompt">&gt;&gt;&gt;</span> Console</span><span class="legend"><b class="hw-log">HW</b> hardware <b class="os-log">OS</b> system <b class="err-log">ERR</b> error</span></div>
+      </div>
+    </section>
   </div>
 
   <div class="phone-panel">
    <div class="phone-stage">
     <div class="volume-controls">
-      <button class="btn-volume" onmousedown="pressButton('VOL_UP')"   onmouseup="releaseButton('VOL_UP')">+</button>
-      <button class="btn-volume" onmousedown="pressButton('VOL_DOWN')" onmouseup="releaseButton('VOL_DOWN')">&minus;</button>
+      <button class="side-key" data-key="VOL_UP" aria-label="Volume up">+</button>
+      <button class="side-key" data-key="VOL_DOWN" aria-label="Volume down">&minus;</button>
     </div>
 
     <div class="phone-device">
-      <div class="screen inner-screen" id="innerScreen"></div>
-      <div class="controls">
-        <div class="control-row">
-          <button class="btn-phone" onmousedown="pressButton('BTN_LEFT')" onmouseup="releaseButton('BTN_LEFT')" onmouseleave="releaseButton('BTN_LEFT')">LEFT</button>
-          <div class="control-row-center"><button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_UP')" onmouseup="releaseButton('ARROW_UP')">&#9650;</button></div>
-          <button class="btn-phone" onmousedown="pressButton('BTN_RIGHT')" onmouseup="releaseButton('BTN_RIGHT')" onmouseleave="releaseButton('BTN_RIGHT')">RIGHT</button>
-        </div>
-        <div class="control-row">
-          <div></div>
-          <div class="control-row-center">
-            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_LEFT')" onmouseup="releaseButton('ARROW_LEFT')">&#9664;</button>
-            <button class="btn-phone btn-ok" onmousedown="pressButton('BTN_OK')" onmouseup="releaseButton('BTN_OK')">&#9679;</button>
-            <button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_RIGHT')" onmouseup="releaseButton('ARROW_RIGHT')">&#9654;</button>
+      <div class="phone-half phone-top">
+        <span class="earpiece" aria-hidden="true"></span>
+        <div class="screen inner-screen" id="innerScreen"></div>
+      </div>
+      <div class="phone-hinge" aria-hidden="true"><span></span><span></span></div>
+      <div class="phone-half phone-bottom">
+        <div class="controls">
+          <button class="key soft-key soft-left" data-key="BTN_LEFT" aria-label="Left soft key"></button>
+          <div class="dpad">
+            <button class="dpad-key dpad-up" data-key="ARROW_UP" aria-label="Up"></button>
+            <button class="dpad-key dpad-left" data-key="ARROW_LEFT" aria-label="Left"></button>
+            <button class="dpad-ok" data-key="BTN_OK">OK</button>
+            <button class="dpad-key dpad-right" data-key="ARROW_RIGHT" aria-label="Right"></button>
+            <button class="dpad-key dpad-down" data-key="ARROW_DOWN" aria-label="Down"></button>
           </div>
-          <div></div>
-        </div>
-        <div class="control-row">
-          <button class="btn-phone btn-call" onmousedown="pressButton('BTN_CALL')" onmouseup="releaseButton('BTN_CALL')">&#9742;</button>
-          <div class="control-row-center"><button class="btn-phone btn-arrow" onmousedown="pressButton('ARROW_DOWN')" onmouseup="releaseButton('ARROW_DOWN')">&#9660;</button></div>
-          <button class="btn-phone btn-hangup" onmousedown="pressButton('BTN_HANGUP')" onmouseup="releaseButton('BTN_HANGUP')" onmouseleave="releaseButton('BTN_HANGUP')">&#9679;</button>
+          <button class="key soft-key soft-right" data-key="BTN_RIGHT" aria-label="Right soft key"></button>
+          <button class="key call-key" data-key="BTN_CALL"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 1h3v1h-3zM1 2h4v1h-4zM1 3h4v1h-4zM2 4h3v1h-3zM3 5h2v1h-2zM3 6h2v1h-2zM3 7h3v1h-3zM4 8h3v1h-3zM5 9h3v1h-3zM9 9h3v1h-3zM6 10h7v1h-7zM8 11h5v1h-5zM9 12h4v1h-4z"/></svg>Call</button>
+          <button class="key end-key" data-key="BTN_HANGUP" aria-label="End. Hold for 3 seconds to switch the phone on or off"><svg class="ico" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 4h8v1h-8zM1 5h12v1h-12zM0 6h14v1h-14zM0 7h4v1h-4zM10 7h4v1h-4zM0 8h4v1h-4zM10 8h4v1h-4zM1 9h2v1h-2zM11 9h2v1h-2z"/></svg>End</button>
         </div>
         <div class="numpad">
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_1')" onmouseup="releaseButton('NUM_1')">1</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_2')" onmouseup="releaseButton('NUM_2')">2</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_3')" onmouseup="releaseButton('NUM_3')">3</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_4')" onmouseup="releaseButton('NUM_4')">4</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_5')" onmouseup="releaseButton('NUM_5')">5</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_6')" onmouseup="releaseButton('NUM_6')">6</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_7')" onmouseup="releaseButton('NUM_7')">7</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_8')" onmouseup="releaseButton('NUM_8')">8</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_9')" onmouseup="releaseButton('NUM_9')">9</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_STAR')" onmouseup="releaseButton('NUM_STAR')">*</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_0')" onmouseup="releaseButton('NUM_0')">0</button>
-          <button class="btn-phone btn-num" onmousedown="pressButton('NUM_HASH')" onmouseup="releaseButton('NUM_HASH')">#</button>
+          <button class="key num-key" data-key="NUM_1">1<small>.,?</small></button>
+          <button class="key num-key" data-key="NUM_2">2<small>abc</small></button>
+          <button class="key num-key" data-key="NUM_3">3<small>def</small></button>
+          <button class="key num-key" data-key="NUM_4">4<small>ghi</small></button>
+          <button class="key num-key" data-key="NUM_5">5<small>jkl</small></button>
+          <button class="key num-key" data-key="NUM_6">6<small>mno</small></button>
+          <button class="key num-key" data-key="NUM_7">7<small>pqrs</small></button>
+          <button class="key num-key" data-key="NUM_8">8<small>tuv</small></button>
+          <button class="key num-key" data-key="NUM_9">9<small>wxyz</small></button>
+          <button class="key num-key" data-key="NUM_STAR">*</button>
+          <button class="key num-key" data-key="NUM_0">0</button>
+          <button class="key num-key" data-key="NUM_HASH">#</button>
         </div>
+        <span class="mic" aria-hidden="true"></span>
       </div>
     </div>
 
     <div class="side-controls">
       <div class="outer-screen-container">
-        <div class="outer-label">External Screen</div>
-        <div class="outer-screen" id="outerScreen"></div>
+        <div class="outer-label">Outer screen</div>
+        <div class="lid"><div class="lid-face">
+          <span class="lens" aria-hidden="true"></span>
+          <div class="screen outer-screen" id="outerScreen"></div>
+        </div></div>
       </div>
-      <button class="btn-phone flip-btn" onclick="toggleFlip()"><span id="flipText">Close Flip</span></button>
+      <button class="btn-pixel flip-btn" onclick="toggleFlip()"><span id="flipText">Close Flip</span></button>
       <div class="battery-info" id="batteryInfo">Battery: 1000 mAh</div>
+      <p class="touchhint">Hold END for 3 seconds to switch the phone on or off.</p>
       <div class="keyhint">
-        hold P = power<br>
-        F = flip &nbsp; Tab = left<br>
-        Backspace = right<br>
-        Enter = OK &nbsp; ; = call<br>
-        Esc = hang up
+        <div class="kh-title">Keyboard</div>
+        <dl>
+          <dt>P (hold)</dt><dd>power</dd>
+          <dt>F</dt><dd>flip</dd>
+          <dt>Tab</dt><dd>left soft key</dd>
+          <dt>Backspace</dt><dd>right soft key</dd>
+          <dt>Enter</dt><dd>OK</dd>
+          <dt>;</dt><dd>call</dd>
+          <dt>Esc</dt><dd>end</dd>
+          <dt>Arrows</dt><dd>d-pad</dd>
+          <dt>0-9 * #</dt><dd>keypad</dd>
+          <dt>+ -</dt><dd>volume</dd>
+        </dl>
       </div>
     </div>
    </div>
@@ -571,13 +846,19 @@ function updateBattery() {
     hardware.battery = Math.max(0, hardware.battery - drain);
   }
   hardware.batteryPercent = Math.floor(hardware.battery / 10);
-  document.getElementById('batteryInfo').textContent =
+  const battEl = document.getElementById('batteryInfo');
+  battEl.textContent =
     'Battery: ' + Math.floor(hardware.battery) + ' mAh' + (hardware.charging ? ' (charging)' : '');
+  // the little battery icon next to the text fills to the same level
+  battEl.style.setProperty('--batt', hardware.batteryPercent);
+  battEl.classList.toggle('charging', hardware.charging);
+  battEl.classList.toggle('low', !hardware.charging && hardware.batteryPercent <= 15);
   osCB('onBatteryChange', hardware.batteryPercent);
 
   if (hardware.battery === 0 && hardware.powered) {
     hwLog('Battery dead - powering off');
     hardware.powered = false;
+    document.body.classList.remove('powered');
     hardware.innerBrightness = 0; hardware.outerBrightness = 0;
     display.clear(); outerDisplay.clear();
     osCB('onPowerOff');
@@ -586,6 +867,7 @@ function updateBattery() {
 setInterval(updateBattery, 1000);
 function toggleCharger() {
   hardware.charging = !hardware.charging;
+  document.getElementById('chargeBtn').classList.toggle('on', hardware.charging);
   hwLog('Charger ' + (hardware.charging ? 'CONNECTED' : 'DISCONNECTED'));
 }
 
@@ -699,6 +981,7 @@ function pressButton(btn) {
       if (hardware.hangupHoldStart === 0) return;
       hardware.hangupHoldStart = 0;
       hardware.powered = !hardware.powered;
+      document.body.classList.toggle('powered', hardware.powered);   // keypad backlight
       if (hardware.powered) {
         hwLog('POWER ON');
         hardware.innerBrightness = 100;
@@ -740,6 +1023,7 @@ function releaseButton(btn) {
 function toggleFlip() {
   hardware.flipOpen = !hardware.flipOpen;
   document.getElementById('flipText').textContent = hardware.flipOpen ? 'Close Flip' : 'Open Flip';
+  document.body.classList.toggle('flip-closed', !hardware.flipOpen);   // dims the open phone
   hwLog('FLIP ' + (hardware.flipOpen ? 'OPEN' : 'CLOSED'));
   osCB('onFlipChange', hardware.flipOpen);
 }
@@ -776,6 +1060,75 @@ document.addEventListener('keyup', e => {
   if (name) { heldKeys[name] = false; releaseButton(name); }
 });
 
+// ---------- phone keys: finger and mouse ----------
+// The keys used to listen for mousedown/mouseup. A phone browser only sends
+// those after the finger lifts, so it could never see a 3-second hold, and a
+// long press selected the key's text instead. A finger is now read with touch
+// events, which also tell the browser to skip its own long-press behaviour
+// (text selection, the copy menu, zooming). A mouse or pen uses pointer
+// events. A key stays held until that same finger or button lets go, even if
+// it slides off the key.
+(function wirePhoneKeys() {
+  const handlesTouch = 'ontouchstart' in window;
+  const held = new Set();
+
+  function down(el) {
+    if (held.has(el)) return;
+    held.add(el);
+    el.classList.add('is-down');
+    pressButton(el.dataset.key);
+  }
+  function up(el) {
+    if (!held.has(el)) return;
+    held.delete(el);
+    el.classList.remove('is-down');
+    releaseButton(el.dataset.key);
+  }
+
+  document.querySelectorAll('[data-key]').forEach(function (el) {
+    // finger
+    el.addEventListener('touchstart', function (e) {
+      e.preventDefault();                 // no selection, no long-press menu, no zoom
+      el.touchId = e.changedTouches[0].identifier;
+      down(el);
+    }, { passive: false });
+    function touchUp(e) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === el.touchId) {
+          el.touchId = null;
+          audio.ensure();                 // phones only let sound start when a finger lifts
+          up(el);
+          return;
+        }
+      }
+    }
+    el.addEventListener('touchend', touchUp);
+    el.addEventListener('touchcancel', touchUp);
+
+    // mouse and pen
+    el.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch' && handlesTouch) return;   // the finger code has it
+      if (e.button !== 0) return;
+      e.preventDefault();
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      down(el);
+    });
+    function pointerUp(e) {
+      if (e.pointerType === 'touch' && handlesTouch) return;
+      up(el);
+    }
+    el.addEventListener('pointerup', pointerUp);
+    el.addEventListener('pointercancel', pointerUp);
+    el.addEventListener('lostpointercapture', pointerUp);
+
+    // no right-click or long-press menu on the phone
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
+
+  // If the window loses focus mid-press, let every key go so none gets stuck.
+  window.addEventListener('blur', function () { Array.from(held).forEach(up); });
+})();
+
 // ---------- OS loading ----------
 function loadOSCode() {
   const code = document.getElementById('codeEditor').value;
@@ -810,6 +1163,7 @@ function restartOS() {
   hardware.pinAttempts = 3;
   updateSimButtons();
   document.getElementById('flipText').textContent = 'Close Flip';
+  document.body.classList.remove('flip-closed', 'powered');
   hwLog('RESTART');
   if (loadOSCode() && typeof window.osInit === 'function') window.osInit();
 }
