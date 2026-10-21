@@ -618,7 +618,7 @@ const audio = {
       if (i >= 0) self.live.splice(i, 1);
     };
   },
-  // one short beep, e.g. the B6 pickup/hangup confirmation. No gate: it is a
+  // one short beep, e.g. the B5 pickup/hangup confirmation. No gate: it is a
   // single tone with nothing after it to separate from.
   tone(hz, ms) {
     if (!this.ensure()) return;
@@ -728,6 +728,12 @@ const modem = {
   isRegistered: () => simState() === 'ready' && hardware.registered && hardware.netReady,
   getCallState: () => hardware.callState,
   getCallNumber: () => hardware.callNumber,
+
+  // What AT+CPSI? reports once registered: the operator code and the band.
+  // Telekom Hungary on LTE band 3, as measured on the bench. Empty while not
+  // on a network, so the OS shows "--" the way the phone does.
+  getOperator: () => modem.isRegistered() ? '216-30' : '',
+  getBand:     () => modem.isRegistered() ? 'EUTRAN-BAND3' : '',
 
   // AT+SPIC -> +SPIC: <pin1>,<puk1>,<pin2>,<puk2>
   // The card keeps the real counter, not the phone, which is the only honest
@@ -980,6 +986,10 @@ function pressButton(btn) {
       hardware.hangupHoldTimer = null;
       if (hardware.hangupHoldStart === 0) return;
       hardware.hangupHoldStart = 0;
+      // The red key is on the inner keypad, under the lid. With the flip shut
+      // it cannot be pressed at all, so it can neither power on nor off - the
+      // firmware refuses BTN_HANGUP_HOLD in that state for the same reason.
+      if (!hardware.flipOpen) { hwLog('Red key is under the lid - open the flip first'); return; }
       hardware.powered = !hardware.powered;
       document.body.classList.toggle('powered', hardware.powered);   // keypad backlight
       if (hardware.powered) {
