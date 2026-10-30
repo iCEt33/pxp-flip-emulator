@@ -1158,7 +1158,7 @@ function ringGain() {
 // The pause between repeats is the SAME for every ringtone. Any rest a table
 // ENDS with is skipped and this gap is played instead - same as audioTask() on
 // the phone. Rests INSIDE a tune stay.
-const RINGTONE_GAP_MS = 1000;
+const RINGTONE_GAP_MS = 2500;
 function ringtonePlayCount(ix) {
   const notes = RINGTONES[ix].notes;
   let n = notes.length;
